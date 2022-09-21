@@ -22,7 +22,7 @@ ui <- fluidPage(
 						## Input rGFA file
 						fileInput(
 							"rgfaFile","rGFA data input",
-							multiple=FALSE, 
+							multiple=T, 
 							buttonLabel="Browse",
 							placeholder="No file selected",
 							accept = c("text/plain",".txt")),
@@ -30,8 +30,8 @@ ui <- fluidPage(
 						fileInput(
 							"bed",
 						  	"BED file input",
-							multiple=FALSE, 
-							buttonLabel="Browse",
+							multiple=F, 
+							buttonLabel="browse",
 							placeholder="No file selected",
 							accept = c("text/plain",".txt")),
 						## Input GAF file
@@ -84,6 +84,8 @@ ui <- fluidPage(
 					        ## Ouput of user graphical interactive information
 					        verbatimTextOutput("info"),
 					        tableOutput("contents"),
+							"File List",
+							verbatimTextOutput('file_list')
 					)
 		)
 
@@ -155,11 +157,11 @@ server <- function(input, output) {
 			  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
 		  	  }
 		  bed_df$hex_color<-sapply(bed_df$rgb, FUN = rgb_to_hex)
-		  
-		  ggplot(data = bed_df) + 
-		  gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) + 
+
+		  ggplot(data = bed_df) +
+		  gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) +
 		  theme(legend.position="none")
-	  	  
+
 	  })
 					 
 	  output$info <- renderText({
@@ -172,7 +174,6 @@ server <- function(input, output) {
 			  paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1), 
 				 " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
 		  }
-		  
 		  paste0(
 			  "click: ", xy_str(input$plot_click),
 			  "dblclick: ", xy_str(input$plot_dblclick),
@@ -180,6 +181,16 @@ server <- function(input, output) {
 			  "brush: ", xy_range_str(input$plot_brush)
 		  )
 	  })
+	  file_list = reactiveValues()
+    observe({
+       if( !is.null(input$bed) ){ # & !(input$bed %in% file_list$dList) ){
+         file_list$dList = append( isolate(file_list$dList) , isolate(input$bed$datapath) )
+       }
+     })
+    output$file_list <- renderPrint({
+      req(input$bed)
+      paste(file_list$dList, sep = ",")
+     })
 }
 
 # Run app ----
