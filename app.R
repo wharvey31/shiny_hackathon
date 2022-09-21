@@ -11,9 +11,20 @@ library(readr)
 # Source helper functions -----
 # source("helpers.R")
 loadSupport()
+source("shiny_hackathon/R/plotGfa.R")
+source("shiny_hackathon/R/plot_arrow_linear_annotations.R")
 
 # User interface ----
 ui <- fluidPage(
+   tags$head(
+      tags$style("html, body { height: 100%; width: 100%}"),
+      tags$style("#panel1 {height: 100px; position: fixed}"),
+      tags$style("#panel2 {
+              overflow: auto;
+              background: orange;
+              margin-left: width:20%;
+          }")
+      ),
 		 ## Title 
 		titlePanel("GFA Visualization"),
 				## Sidebar content
@@ -71,22 +82,15 @@ ui <- fluidPage(
 							height="100px",
 							brush=brushOpts(id="plot_brush")
 						        ),
-
-					        ## Plot Ouput of linear visualization
-					        "Linear Visualization Window",
-					        plotOutput(
-							"bed_plots",width="100%",height="400px",click = "plot_click",
-							dblclick = "plot_dblclick",
-							hover = "plot_hover",
-							brush = "plot_brush"
-						        ),
-
-					        ## Ouput of user graphical interactive information
-					        verbatimTextOutput("info"),
-					        tableOutput("contents"),
-							"File List",
-							verbatimTextOutput('file_list')
-					)
+					),
+       absolutePanel(id = "panel2", 
+                     top = "50%", left = "35%", height = "40%", width = "60%", right = "10%",bottom = "10%",
+                     fluidRow(## Plot Ouput of linear visualization
+                       p("Linear Visualization Window"),
+                       uiOutput("bed_plots.ui"),
+                     ),
+                 
+    ),
 		)
 
 # Server logic ----
@@ -180,13 +184,35 @@ server <- function(input, output) {
     })
     ## Linear visualization
     #p = NULL
-    output$bed_plots <- renderPlot({
+    get_bed_df <- reactive({
       req(input$bed)
+      bed_df = load_annotation_bed(bed_path = input$bed$datapath)
+      bed_df
+    })
+    plotHeight <- reactive({
+      cur_bed = get_bed_df()
+      100 * length( unique(cur_bed$contig) )
+    }
+    ) 
+    output$bed_plots <- renderPlot( {
+      req(get_bed_df())
+      if (is.null(get_bed_df()) ){
+        plot.new()
+        return()
+      }
       cur_df = load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
       p = plot_bed_annot_track(track_name = "testing", bed_df = cur_df, p = NULL)
       p
-    })    
-
+    })
+    output$bed_plots.ui <- renderUI({
+      plotOutput("bed_plots", 
+                 height = plotHeight(), 
+                 click = "plot_click",
+                 dblclick = "plot_dblclick",
+                 hover = "plot_hover",
+                 brush = "plot_brush",
+                 inline = F)
+    })
 }
 
 # Run app ----
