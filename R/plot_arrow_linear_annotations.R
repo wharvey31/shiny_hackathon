@@ -39,14 +39,14 @@ check_bed = function(bed_df){
 
 #'load_bed : load a bed for annotations and make columns needed for plot_bed_annot_track func.
 load_annotation_bed = function(bed_path, color_col = NULL){
+  STRAND_COL = 6 #column of strand in bed file
   out_df = read_tsv(file = bed_path , col_names = F, comment = "#")
   check_bed(out_df)
   colnames(out_df)[1:3] = c("contig", "start", "stop") 
   #add direction:
-  strand_col = 6
-  if(ncol(out_df) >= 6){
-    if( all( levels(as.factor(out_df[,strand_col, drop = T])) %in% c( "+", "-", "<", ">", "forward", "reverse", "for", "rev" ) ) ){
-      colnames(out_df)[forward_rev_col] = 'strand' 
+  if(ncol(out_df) >= STRAND_COL){
+    if( all( levels(as.factor(out_df[,STRAND_COL, drop = T])) %in% c( "+", "-", "<", ">", "forward", "reverse", "for", "rev" ) ) ){
+      colnames(out_df)[STRAND_COL] = 'strand' 
       out_df = out_df %>% mutate( strand = ifelse(strand %in% c("+", ">", "forward", "for"), yes = "+", no = "-"))
     }
   }
