@@ -148,20 +148,23 @@ server <- function(input, output) {
 	  })
 					  
 	  ## Linear visualization
+	  p = NULL
 	  output$bed_plots <- renderPlot({
+	    p = NULL
 		  req(input$bed)
-		  bed_df <- read_tsv(input$bed$datapath, col_names = T )
-		  colnames(bed_df) <- c("contig","start","stop","name",".","strand","..","...","rgb")
-		  rgb_to_hex <- function(rgb_comm){
-			  rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
-			  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
-		  	  }
-		  bed_df$hex_color<-sapply(bed_df$rgb, FUN = rgb_to_hex)
-
-		  ggplot(data = bed_df) +
-		  gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) +
-		  theme(legend.position="none")
-
+		  bed_df <- load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
+		  p = plot_bed_annot_track(track_name = "testing", bed_df = bed_df, p = p, facet_col = "contig")
+		  p
+		#   colnames(bed_df) <- c("contig","start","stop","name",".","strand","..","...","rgb")
+		#   rgb_to_hex <- function(rgb_comm){
+		# 	  rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
+		# 	  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
+		#   	  }
+		#   bed_df$hex_color<-sapply(bed_df$rgb, FUN = rgb_to_hex)
+		# 
+		#   ggplot(data = bed_df) +
+		#   gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) +
+		#   theme(legend.position="none")
 	  })
 					 
 	  output$info <- renderText({
