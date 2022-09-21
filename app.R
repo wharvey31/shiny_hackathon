@@ -68,14 +68,14 @@ ui <- fluidPage(
 							"ggdag",
 							"Graph Visualization Window",
 							width="100%",
-							height="400px",
+							height="100px",
 							brush=brushOpts(id="plot_brush")
 						        ),
 
 					        ## Plot Ouput of linear visualization
 					        "Linear Visualization Window",
 					        plotOutput(
-							"bed_plots",width="100%",height="100px",click = "plot_click",
+							"bed_plots",width="100%",height="400px",click = "plot_click",
 							dblclick = "plot_dblclick",
 							hover = "plot_hover",
 							brush = "plot_brush"
