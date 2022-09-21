@@ -169,9 +169,7 @@ server <- function(input, output) {
 		)
 	})
 	output$plot_brushedpoints <- renderTable({
-		bed_df <- read_tsv(input$bed$datapath, col_names = T )
-		colnames(bed_df) <- c("contig","start","stop","name",".","strand","..","...","rgb")
-		res <- brushedPoints(bed_df,input$plot_brush,xvar = "start",yvar = NULL,allRows = FALSE)
+		res <- brushedPoints(bed_df(),input$plot_brush,xvar = "start",yvar = NULL,allRows = FALSE)
 		if (nrow(res) == 0)
 			return()
 		res[c("contig","start","stop","name","strand")]
