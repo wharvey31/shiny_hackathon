@@ -146,27 +146,7 @@ server <- function(input, output) {
 	  node.plt + 
 	    geom_bezier(data=arcs.df, aes(x = x, y = y, group=group), arrow = arrow(length = unit(0.01, "npc")), inherit.aes = FALSE)
 	  })
-					  
-	  ## Linear visualization
-	  p = NULL
-	  output$bed_plots <- renderPlot({
-	    p = NULL
-		  req(input$bed)
-		  bed_df <- load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
-		  p = plot_bed_annot_track(track_name = "testing", bed_df = bed_df, p = p, facet_col = "contig")
-		  p
-		#   colnames(bed_df) <- c("contig","start","stop","name",".","strand","..","...","rgb")
-		#   rgb_to_hex <- function(rgb_comm){
-		# 	  rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
-		# 	  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
-		#   	  }
-		#   bed_df$hex_color<-sapply(bed_df$rgb, FUN = rgb_to_hex)
-		# 
-		#   ggplot(data = bed_df) +
-		#   gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) +
-		#   theme(legend.position="none")
-	  })
-					 
+					
 	  output$info <- renderText({
 		  xy_str <- function(e) {
 			  if(is.null(e)) return("NULL\n")
@@ -194,6 +174,19 @@ server <- function(input, output) {
       req(input$bed)
       paste(file_list$dList, sep = ",")
      })
+
+    observe({
+      file_list
+    })
+    ## Linear visualization
+    #p = NULL
+    output$bed_plots <- renderPlot({
+      req(input$bed)
+      cur_df = load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
+      p = plot_bed_annot_track(track_name = "testing", bed_df = cur_df, p = NULL)
+      p
+    })    
+
 }
 
 # Run app ----
