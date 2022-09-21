@@ -92,8 +92,8 @@ plot_bed_annot_track = function(track_name, bed_df, p = NULL, facet_col = "conti
     theme(legend.position="none")
   
   #check if multiple contigs
-  if( length(unique(bed_df)) > 1 ){
-    p = p + facet_wrap("contig", ncol = 1) + theme(legend.position="none")
+  if( length(unique(bed_df$contig)) > 1 ){
+    p = p + facet_wrap(~contig, ncol = 1) + theme(legend.position="none")
   }
   #
   p
@@ -110,7 +110,7 @@ plot_bed_annot_track = function(track_name, bed_df, p = NULL, facet_col = "conti
 # p = plot_bed_annot_track(track_name = "repeat_masker", bed_df = rm_bed1, p  = p)
 # 
 # 
-# #try facet
+# # #try facet
 # dup_bed1 = load_annotation_bed(bed_path = "example_data/combined/combined_duplicons.bed", color_col = 9)
 # trf_bed1 = load_annotation_bed(bed_path = "example_data/combined/combined_trf.bed")
 # rm_bed1 = load_annotation_bed(bed_path = "example_data/combined/combined_rm.bed", color_col = 4)
