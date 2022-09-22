@@ -11,24 +11,43 @@ library(readr)
 # Source helper functions -----
 # source("helpers.R")
 loadSupport()
-source("shiny_hackathon/R/plotGfa.R")
-source("shiny_hackathon/R/plot_arrow_linear_annotations.R")
+#source("shiny_hackathon/R/plotGfa.R")
+#source("shiny_hackathon/R/plot_arrow_linear_annotations.R")
 
 # User interface ----
 ui <- fluidPage(
    tags$head(
       tags$style("html, body { height: 100%; width: 100%}"),
-      tags$style("#panel1 {height: 100px; position: fixed}"),
+      tags$style("#title_panel {
+                 background : blue;
+                 margin-left: width:20%"
+      ),
+      tags$style("#side_panel {
+                 background : green;
+                 margin-left: width:20%"
+                 ),
+      tags$style("#panel1 {
+      background: red;
+                 margin-left: width:100%;
+                 }"),
       tags$style("#panel2 {
               overflow: auto;
               background: orange;
+              margin-left: width:100%;
+          }"),
+      tags$style("#panel3 {
+              overflow: auto;
+              background: purple;
               margin-left: width:20%;
-          }")
+          }"),
       ),
 		 ## Title 
-		titlePanel("GFA Visualization"),
+		absolutePanel(id = "title_panel",
+		              top = "0%", left = "1%", height = "15%", width = "30%", bottom = "90%",
+		              h3("GFA Visualization") ),
 				## Sidebar content
-				sidebarPanel(
+				absolutePanel(id = "side_panel",
+				              top = "20%", left = "1%", height = "70%", width = "30%", bottom = "20%", #right = "80%"
 						# Input: Select a file ----
 						## Input rGFA file
 						fileInput(
@@ -63,27 +82,45 @@ ui <- fluidPage(
 						downloadButton("Fasta_download", "FASTA file Download",icon = shiny::icon("download")),
 						downloadButton("BED_download", "BED file Download",icon = shiny::icon("download"))
 						),
-				
-				mainPanel(
-					        "Graph Visualization Window",
-
-					        ## Plot Ouput of graphic visualization
-					        plotOutput(
-							"ggdag",
-							"Graph Visualization Window",
-							width="100%",
-							height="100px",
-							brush=brushOpts(id="plot_brush")
-						        ),
-					),
+				absolutePanel(id = "panel1",
+				             top = "5%", left = "35%", height = "40%", width = "60%", right = "10%",
+				             plotOutput(
+				               "ggdag",
+				               "Graph Visualization Window",
+				               width="100%",
+				               height="100px",
+				               brush=brushOpts(id="plot_brush")
+				             )
+				             ),
+				# mainPanel(
+				# 	        "Graph Visualization Window",
+				# 
+				# 	        ## Plot Ouput of graphic visualization
+				# 	        plotOutput(
+				# 			"ggdag",
+				# 			"Graph Visualization Window",
+				# 			width="100%",
+				# 			height="100px",
+				# 			brush=brushOpts(id="plot_brush")
+				# 		        ),
+				# 	),
        absolutePanel(id = "panel2", 
-                     top = "50%", left = "35%", height = "40%", width = "60%", right = "10%",bottom = "10%",
+                     top = "50%", left = "35%", height = "30%", width = "60%", right = "5%",bottom = "10%",
                      fluidRow(## Plot Ouput of linear visualization
                        p("Linear Visualization Window"),
                        uiOutput("bed_plots.ui"),
                      ),
                  
     ),
+   absolutePanel(id = "panel3", 
+                 top = "80%", left = "35%", height = "15%", width = "60%", right = "10%",bottom = "10%",
+                 fluidRow(## Plot Ouput of linear visualization
+                   p("GAF segments"),
+                   uiOutput("GAF_select.ui"),
+                 ),
+                 
+   ),
+   
 		)
 
 # Server logic ----
