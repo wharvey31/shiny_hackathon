@@ -8,7 +8,7 @@
 #' @author David Porubsky
 #' @export
 #' 
-addGraphPlottingCoords <- function(gfa.tbl=NULL) {
+addGraphPlottingCoords <- function(gfa.tbl=NULL, spacer.width=0.05) {
   ## Check user input ##
   ######################
   ## Get data from loaded GFA file

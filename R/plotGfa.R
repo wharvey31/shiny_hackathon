@@ -54,7 +54,7 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
   ### Prepare data for plotting ###
   #################################
   ## Define segment spacer as fraction of the total length of all segments
-  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl)
+  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl, spacer.width = spacer.width)
   segms.df <- gfa.tbl$graph.plt.coords
   
   ## Define segments ##
