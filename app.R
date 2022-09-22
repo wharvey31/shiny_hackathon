@@ -12,6 +12,8 @@ library(readr)
 # Source helper functions -----
 # source("helpers.R")
 loadSupport()
+source("shiny_hackathon/R/plotGfa.R")
+source("shiny_hackathon/R/plot_arrow_linear_annotations.R")
 
 # functions
 # function to change rgb input into hex color
@@ -23,6 +25,15 @@ rgb_to_hex <- function(rgb_comm){
 
 # User interface ----
 ui <- fluidPage(
+   tags$head(
+      tags$style("html, body { height: 100%; width: 100%}"),
+      tags$style("#panel1 {height: 100px; position: fixed}"),
+      tags$style("#panel2 {
+              overflow: auto;
+              background: orange;
+              margin-left: width:20%;
+          }")
+      ),
 		 ## Title 
 		titlePanel("GFA Visualization"),
 				## Sidebar content
@@ -31,30 +42,23 @@ ui <- fluidPage(
 						## Input rGFA file
 						fileInput(
 							"rgfaFile","rGFA data input",
-							multiple=FALSE, 
+							multiple=T, 
 							buttonLabel="Browse",
 							placeholder="No file selected",
 							accept = c("text/plain",".txt")),
-						 ## Input BED file
-						 fileInput(
-							 "bed",
-							 "BED file input",
-							 multiple=FALSE,
-							 buttonLabel="Browse",
-							 placeholder="No file selected",
-							 accept = c("text/plain",".txt")),
+
+						## Input BED file
+						fileInput(
+							"bed",
+						  	"BED Annotation",
+							multiple=F, 
+							buttonLabel="browse",
+							placeholder="No file selected",
+							accept = c("text/plain",".txt")),
 						## Input GAF file
 						fileInput(
 							"GAF_input2",
 							"GAF data input",
-							multiple=FALSE, 
-							buttonLabel="Browse",
-							placeholder="No file selected"
-							),
-						## Input Annotation file
-						fileInput(
-							"Annotation_Input",
-							"Add Annotation",
 							multiple=FALSE, 
 							buttonLabel="Browse",
 							placeholder="No file selected"
@@ -82,30 +86,24 @@ ui <- fluidPage(
 
 					        ## Plot Ouput of graphic visualization
 					        plotOutput(
-      							"ggdag",
-      							"Graph Visualization Window",
-      							width="100%",
+							"ggdag",
+							"Graph Visualization Window",
+							width="100%",
       							height="400px",
       							brush=brushOpts(id="graph_brush", resetOnNew = TRUE),
 							      click="graph_click",
       							dblclick = "graph_dblclick",
 						        ),
-					        tableOutput("graph_point"),
-					        ## Plot Ouput of linear visualization
-					        # Linear Visualization Window
-					        h3("Linear Visualization Window"),
-						plotOutput(
-							"bed_plots",width="100%",height="100px",click = "plot_click",
-							dblclick = "plot_dblclick",
-							hover = "plot_hover",
-							brush = brushOpts(id = "plot_brush",direction="x")
-							),
-					        ## Ouput of user graphical interactive information
-						h3("Brushed info"),
-						verbatimTextOutput("info"),
-						h4("Brushed gene info"),
-						tableOutput("plot_brushedpoints"),
-					)
+                  tableOutput("graph_point"),
+					),
+       absolutePanel(id = "panel2", 
+                     top = "50%", left = "35%", height = "40%", width = "60%", right = "10%",bottom = "10%",
+                     fluidRow(## Plot Ouput of linear visualization
+                       p("Linear Visualization Window"),
+                       uiOutput("bed_plots.ui"),
+                     ),
+                 
+    ),
 		)
 
 # Server logic ----
@@ -126,7 +124,7 @@ server <- function(input, output) {
 	})
 	# Plot the graph
 	output$ggdag <- renderPlot({
-		# Wait for rgfa input
+  		# Wait for rgfa input
 		req(input$rgfaFile)
 		# Plot df and add cartesian 
 		plotGfa(gfa.tbl=graph_df()) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
@@ -135,21 +133,55 @@ server <- function(input, output) {
 		req(input$graph_click)
 		brushedPoints(graph_df()$segments, input$graph_brush, xvar = "SO", yvar = "SR")
 	})
-	## Linear visualization
-	bed_df <- reactive({
-		data_tsv <- read_tsv(input$bed$datapath, col_names = T )
-		colnames(data_tsv) <- c("contig","start","stop","name",".","strand","..","...","rgb")
-		data_tsv$hex_color <- sapply(data_tsv$rgb, FUN = rgb_to_hex)
-		data_tsv
-	})
-	
-	output$bed_plots <- renderPlot({
-		req(input$bed)
-		ggplot(data = bed_df()) +
-		gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) +
-		theme(legend.position="none")
-	})
-  	
+
+## Linear Annotations
+	  file_list = reactiveValues()
+    observe({
+       if( !is.null(input$bed) ){ # & !(input$bed %in% file_list$dList) ){
+         file_list$dList = append( isolate(file_list$dList) , isolate(input$bed$datapath) )
+       }
+     })
+    output$file_list <- renderPrint({
+      req(input$bed)
+      paste(file_list$dList, sep = ",")
+     })
+
+    observe({
+      file_list
+    })
+    ## Linear visualization
+    #p = NULL
+    get_bed_df <- reactive({
+      req(input$bed)
+      bed_df = load_annotation_bed(bed_path = input$bed$datapath)
+      bed_df
+    })
+    plotHeight <- reactive({
+      cur_bed = get_bed_df()
+      100 * length( unique(cur_bed$contig) )
+    }
+    ) 
+    output$bed_plots <- renderPlot( {
+      req(get_bed_df())
+      if (is.null(get_bed_df()) ){
+        plot.new()
+        return()
+      }
+      cur_df = load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
+      p = plot_bed_annot_track(track_name = "testing", bed_df = cur_df, p = NULL)
+      p
+    })
+    output$bed_plots.ui <- renderUI({
+      plotOutput("bed_plots", 
+                 height = plotHeight(), 
+                 click = "plot_click",
+                 dblclick = "plot_dblclick",
+                 hover = "plot_hover",
+                 brush = "plot_brush",
+                 inline = F)
+    })
+
+	## Linear brushing visualization
 	output$info <- renderText({
 		xy_str <- function(e) {
 			if(is.null(e)) return("NULL\n")
