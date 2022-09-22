@@ -18,7 +18,7 @@ loadSupport()
 
 # User interface ----
 ui <- fluidPage(
-   tags$head(
+	  tags$head(
       tags$style("html, body { height: 100%; width: 100%}"),
       tags$style("#title_panel {
                  background : blue;
@@ -50,7 +50,9 @@ ui <- fluidPage(
 				## Sidebar content
 				absolutePanel(id = "side_panel",
 				              top = "20%", left = "1%", height = "70%", width = "30%", bottom = "20%", #right = "80%"
-						# Input: Select a file ----
+					    # Initialize shiny jus
+						shinyjs::useShinyjs(),
+					    # Input: Select a file ----
 						## Input rGFA file
 						fileInput(
 							"rgfaFile","rGFA data input",
@@ -84,6 +86,7 @@ ui <- fluidPage(
 						  multiple = FALSE,
 						  list("outputfile1","outputfile2")
 						  ),
+						shinyjs::disabled(checkboxInput("display_frequency_checkbox", "Show freqeuency", value = FALSE)),
 						## Download Fasta file and Bed file
 						downloadButton("Fasta_download", 
 						               "FASTA file Download",
@@ -240,7 +243,7 @@ server <- function(input, output, session) {
 	})
 	
 	haplotypes <- eventReactive(input$GAF_input2,{
-		haplotypes_df()$SN[!duplicated(haplotypes_df()$SN)]
+		haplotypes_df()$haplotype[!duplicated(haplotypes_df()$haplotype)]
 	})
 	
 	observeEvent(haplotypes(), {
@@ -249,8 +252,8 @@ server <- function(input, output, session) {
 	
 	# Haplotype selection
 	haplotype <- eventReactive(input$select_graph, {
-				input$select_graph			
-			})
+		input$select_graph			
+	})
 	
 	observeEvent(haplotypes(), {
 		output$ggdag  <- renderPlot({
