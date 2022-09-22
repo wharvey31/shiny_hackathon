@@ -10,29 +10,61 @@ library(readr)
 
 
 # Source helper functions -----
-# source("helpers.R")
+
 loadSupport()
+
+# functions
+# function to change rgb input into hex color
 
 # User interface ----
 ui <- fluidPage(
+   tags$head(
+      tags$style("html, body { height: 100%; width: 100%}"),
+      tags$style("#title_panel {
+                 background : blue;
+                 margin-left: width:20%"
+      ),
+      tags$style("#side_panel {
+                 background : green;
+                 margin-left: width:20%"
+                 ),
+      tags$style("#panel1 {
+      background: red;
+                 margin-left: width:100%;
+                 }"),
+      tags$style("#panel2 {
+              overflow: auto;
+              background: orange;
+              margin-left: width:100%;
+          }"),
+      tags$style("#panel3 {
+              overflow: auto;
+              background: purple;
+              margin-left: width:20%;
+          }"),
+      ),
 		 ## Title 
-		titlePanel("GFA Visualization"),
+		absolutePanel(id = "title_panel",
+		              top = "0%", left = "1%", height = "15%", width = "30%", bottom = "90%",
+		              h3("GFA Visualization") ),
 				## Sidebar content
-				sidebarPanel(
+				absolutePanel(id = "side_panel",
+				              top = "20%", left = "1%", height = "70%", width = "30%", bottom = "20%", #right = "80%"
 						# Input: Select a file ----
 						## Input rGFA file
 						fileInput(
 							"rgfaFile","rGFA data input",
-							multiple=FALSE, 
+							multiple=T, 
 							buttonLabel="Browse",
 							placeholder="No file selected",
 							accept = c("text/plain",".txt")),
+
 						## Input BED file
 						fileInput(
 							"bed",
-						  "BED file input",
-							multiple=FALSE, 
-							buttonLabel="Browse",
+						  	"BED Annotation",
+							multiple=F, 
+							buttonLabel="browse",
 							placeholder="No file selected",
 							accept = c("text/plain",".txt")),
 						## Input GAF file
@@ -43,14 +75,7 @@ ui <- fluidPage(
 							buttonLabel="Browse",
 							placeholder="No file selected"
 							),
-						## Input Annotation file
-						fileInput(
-							"Annotation_Input",
-							"Add Annotation",
-							multiple=FALSE, 
-							buttonLabel="Browse",
-							placeholder="No file selected"
-							),
+						uiOutput("contig_selection"),
 						# Not so sure about this part yet
 						selectInput(
 						  "select_graph",
@@ -68,99 +93,180 @@ ui <- fluidPage(
 						               "BED file Download",
 						               icon = shiny::icon("download"))
 						),
-				
-				mainPanel(
-					        # "Graph Visualization Window",
 
-					        ## Plot Ouput of graphic visualization
-					        plotOutput(
-      							"ggdag",
-      							"Graph Visualization Window",
-      							width="100%",
-      							height="400px",
-      							brush=brushOpts(id="graph_brush", resetOnNew = TRUE),
-							      click="graph_click",
-      							dblclick = "graph_dblclick",
-						        ),
-					        tableOutput("graph_point"),
-					        ## Plot Ouput of linear visualization
-					        # "Linear Visualization Window",
-					        plotOutput(
-						        	"bed_plots",
-						        	width="100%",
-						        	height="100px",
-						        	click = "linear_click",
-						        	dblclick = "linear_dblclick",
-				        			hover = "linear_hover",
-						        	brush = "linear_brush"
-						        ),
-					        ## Ouput of user graphical interactive information
-					        # verbatimTextOutput("info"),
-					)
-		)
+				absolutePanel(id = "panel1",
+				             top = "5%", left = "35%", height = "40%", width = "60%", right = "10%",
+				             plotOutput(
+				               "ggdag",
+				               "Graph Visualization Window",
+				               width="100%",
+				               height="100%",
+				               brush=brushOpts(id="graph_brush", resetOnNew = TRUE),
+				               click="graph_click",
+				               dblclick="graph_dblclick",
+				             )
+				             ),
+       absolutePanel(id = "panel2", 
+                     top = "50%", left = "35%", height = "100%", width = "60%", right = "5%",bottom = "10%",
+                     fluidRow(## Plot Ouput of linear visualization
+                       # p("Linear Visualization Window"),
+                       uiOutput("bed_plots.ui"),
+                     ),
+                 
+    ),
+   absolutePanel(id = "panel3", 
+                 top = "80%", left = "35%", height = "15%", width = "60%", right = "10%",bottom = "10%",
+                 fluidRow(## Plot Ouput of linear visualization
+                   p("GAF segments"),
+                   uiOutput("GAF_select.ui"),
+                 ),
+   ),
+)
 
 # Server logic ----
-server <- function(input, output) {
+server <- function(input, output, session) {
 	# Read the rGFA file
 	ranges <- reactiveValues(x = NULL, y = NULL)
-	
 	observeEvent(input$graph_dblclick, {
-	  brush <- input$graph_brush
-	  if (!is.null(brush)) {
-	    ranges$x <- c(brush$xmin, brush$xmax)
-	  } else {
-	    ranges$x <- NULL
-	  }
+		brush <- input$graph_brush
+		if (!is.null(brush)) {
+			ranges$x <- c(brush$xmin, brush$xmax)
+		} else {
+			ranges$x <- NULL
+		}
 	})
 	graph_df <- reactive({
-	  readGfa(gfa.file = input$rgfaFile$datapath, 
-	          store.fasta = 'FALSE')
+		readGfa(gfa.file = input$rgfaFile$datapath, 
+			store.fasta = 'FALSE')
 	})
 	# Plot the graph
 	output$ggdag <- renderPlot({
-	  # Wait for rgfa input
-	  req(input$rgfaFile)
-	  # Plot df and add cartesian 
-	  plotGfa(gfa.tbl=graph_df()) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
-	 })
-  output$graph_point <- renderTable({
-    req(input$graph_click)
-    brushedPoints(graph_df()$segments, input$graph_brush, xvar = "SO", yvar = "SR")
-  })
-	  ## Linear visualization
-	output$bed_plots <- renderPlot({
-	  req(input$bed)
-	  bed_df <- read_tsv(input$bed$datapath, col_names = T )
-	  colnames(bed_df) <- c("contig","start","stop","name",".","strand","..","...","rgb")
-		rgb_to_hex <- function(rgb_comm){
-		rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
-		return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
-	}
-		  bed_df$hex_color<-sapply(bed_df$rgb, FUN = rgb_to_hex)
-		  
-		  ggplot(data = bed_df) + 
-		  gggenes::geom_gene_arrow(mapping =  aes(xmin = start, xmax = stop, y = 1, fill = hex_color)) + 
-		  theme(legend.position="none")
-	  	  
-	  })
-	  output$info <- renderText({
-		  xy_str <- function(e) {
-			  if(is.null(e)) return("NULL\n")
-			  paste0("x=", round(e$x, 1), " y=", round(e$y, 1), "\n")
-		  }
-		  xy_range_str <- function(e) {
-			  if(is.null(e)) return("NULL\n")
-			  paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1), 
-				 " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
-		  }
-		  
-		  paste0(
-			  "click: ", xy_str(input$linear_click),
-			  "dblclick: ", xy_str(input$linear_dblclick),
-			  "hover: ", xy_str(input$linear_hover),
-			  "brush: ", xy_range_str(input$linear_brush)
-		  )
-	  })
+  		# Wait for rgfa input
+		req(input$rgfaFile)
+		# Plot df and add cartesian 
+		plotGfa(gfa.tbl=graph_df()) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+	})
+	output$graph_point <- renderTable({
+		req(input$graph_click)
+		brushedPoints(graph_df()$segments, input$graph_brush, xvar = "SO", yvar = "SR")
+	})
+
+## Linear Annotations
+	  file_list = reactiveValues()
+    observe({
+       if( !is.null(input$bed) ){ # & !(input$bed %in% file_list$dList) ){
+         file_list$dList = append( isolate(file_list$dList) , isolate(input$bed$datapath) )
+       }
+     })
+    output$file_list <- renderPrint({
+      req(input$bed)
+      paste(file_list$dList, sep = ",")
+     })
+
+    observe({
+      file_list
+    })
+    ## Linear visualization
+    #p = NULL
+    get_bed_df <- reactive({
+      req(input$bed)
+      bed_df = load_annotation_bed(bed_path = input$bed$datapath)
+      bed_df
+    })
+    plotHeight <- reactive({
+      cur_bed = get_bed_df()
+      100 * length( unique(cur_bed$contig) )
+    }
+    ) 
+    output$bed_plots <- renderPlot( {
+      req(get_bed_df())
+      if (is.null(get_bed_df()) ){
+        plot.new()
+        return()
+      }
+      cur_df = load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
+      p = plot_bed_annot_track(track_name = "", bed_df = cur_df, p = NULL)
+      p
+    })
+    output$bed_plots.ui <- renderUI({
+      plotOutput("bed_plots", 
+                 height = plotHeight(), 
+                 click = "plot_click",
+                 dblclick = "plot_dblclick",
+                 hover = "plot_hover",
+                 brush = "plot_brush",
+                 inline = F)
+    })
+    contigs <- reactive({
+      cur_bed = get_bed_df()
+      get_haplotype_names(cur_bed)
+    }
+    )
+    
+    #choices of contig:
+    output$contig_selection = renderUI({
+      selectInput(inputId = 'contig_selection',label = 'Contig Highlight', contigs())
+    })
+
+	## Linear brushing visualization
+	output$info <- renderText({
+		xy_str <- function(e) {
+			if(is.null(e)) return("NULL\n")
+			paste0("x=", round(e$x, 1), " y=", round(e$y, 1), "\n")
+		}
+		
+		xy_range_str <- function(e) {
+			if(is.null(e)) return("NULL\n")
+			paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1))
+		}
+		
+		paste0(
+			"click: ", xy_str(input$plot_click),
+			"dblclick: ", xy_str(input$plot_dblclick),
+			"hover: ", xy_str(input$plot_hover),
+			"brush: ", xy_range_str(input$plot_brush)
+		)
+	})
+	output$plot_brushedpoints <- renderTable({
+		res <- brushedPoints(bed_df(),input$plot_brush,xvar = "start",yvar = NULL,allRows = FALSE)
+		if (nrow(res) == 0)
+			return()
+		res[c("contig","start","stop","name","strand")]
+	})
+
+	# Haplotype select population
+	haplotypes_df <- reactive({
+				gafToLinks(gaf.file = input$GAF_input2$datapath)
+			})
+	
+	haplotypes <- eventReactive(input$GAF_input2,{
+				haplotypes_df()$SN[!duplicated(haplotypes_df()$SN)]
+			})
+	
+	observeEvent(haplotypes(), {
+				updateSelectInput(session = session, inputId = "select_graph", choices = haplotypes())
+			})
+	
+	# Haplotype selection
+	haplotype <- eventReactive(input$select_graph, {
+				input$select_graph			
+			})
+	
+	observeEvent(haplotypes(), {
+		output$ggdag  <- renderPlot({
+					
+			full_plot <- plotGfa(gfa.tbl=graph_df())
+			max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
+			
+			haplotype_links <- subset(haplotypes_df(), SN==haplotype())
+			haplotype_segments <- segments_for_haplotype_links(graph_df()$segments, haplotype_links)
+			
+			haplotype_info = list(segments = haplotype_segments, links = haplotype_links)
+			
+			plotGfa(gfa.tbl=haplotype_info, y.limit=max_abs_value) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+		})
+	})
+	
 }
 
 # Run app ----
