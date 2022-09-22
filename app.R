@@ -291,9 +291,15 @@ server <- function(input, output, session) {
 
 	# Graph type
 	graph_type_selected <- eventReactive(input$graphType, {
-				input$graphType			
-			})
-
+		input$graphType			
+	})
+	
+	# y_limit
+	y_limit <- eventReactive(input$rgfaFile, {
+		full_plot <- plotGfa(gfa.tbl=graph_df())
+		max_absolute_value(full_plot$plot_env$arc.height)
+	})
+	
 	observeEvent(haplotypes(), {
 		output$ggdag  <- renderPlot({
 			full_plot <- plotGfa(gfa.tbl=graph_df())
@@ -316,7 +322,7 @@ server <- function(input, output, session) {
 				gaf.links <- haplotype_links
 			plotGfa(
 				gfa.tbl=haplotype_info,
-				y.limit=max_abs_value,
+				y.limit=y_limit(),
 				link.frequency=link.frequency,
 				gaf.links=gaf.links,
 				highlight.haplotype=highlight.haplotype) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
