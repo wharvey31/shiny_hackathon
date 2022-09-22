@@ -54,7 +54,7 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
   ### Prepare data for plotting ###
   #################################
   ## Define segment spacer as fraction of the total length of all segments
-  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl, spacer.width = spacer.width)
+  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl, spacer.width = spacer.width, order.by = order.by)
   segms.df <- gfa.tbl$graph.plt.coords
   
   ## Define segments ##
@@ -66,8 +66,9 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
                          rank=rep(segms.df$rank, each=2))
   segms.df$midpoint <- segms.df$start + ((segms.df$end - segms.df$start) / 2)
   ## Get haplotype segments
-  hap.segms.df <- segms.df[segms.df$id %in% hap.segments,]
-  
+  if (!is.null(highlight.haplotype)) {
+    hap.segms.df <- segms.df[segms.df$id %in% hap.segments,]
+  }
   ## Define links ##
   ##################
   ## All links
