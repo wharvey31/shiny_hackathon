@@ -16,3 +16,9 @@ segments_for_haplotype_links <- function(all_segments, haplotype_links){
 	segments_for_haplotype_links <- subset(all_segments, (segment.id %in% haplotype_segment_ids_set))
 	return(segments_for_haplotype_links)
 }
+
+rgb_to_hex <- function(rgb_comm){
+  rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
+  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
+}
+

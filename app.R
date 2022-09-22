@@ -10,15 +10,11 @@ library(readr)
 
 
 # Source helper functions -----
-source("helpers.R")
+
 loadSupport()
 
 # functions
 # function to change rgb input into hex color
-rgb_to_hex <- function(rgb_comm){
-  rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
-  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
-}
 
 # User interface ----
 ui <- fluidPage(
@@ -104,12 +100,14 @@ ui <- fluidPage(
 				               "ggdag",
 				               "Graph Visualization Window",
 				               width="100%",
-				               height="100px",
-				               brush=brushOpts(id="plot_brush")
+				               height="100%",
+				               brush=brushOpts(id="graph_brush", resetOnNew = TRUE),
+				               click="graph_click",
+				               dblclick="graph_dblclick",
 				             )
 				             ),
        absolutePanel(id = "panel2", 
-                     top = "50%", left = "35%", height = "30%", width = "60%", right = "5%",bottom = "10%",
+                     top = "50%", left = "35%", height = "100%", width = "60%", right = "5%",bottom = "10%",
                      fluidRow(## Plot Ouput of linear visualization
                        # p("Linear Visualization Window"),
                        uiOutput("bed_plots.ui"),
@@ -122,10 +120,8 @@ ui <- fluidPage(
                    p("GAF segments"),
                    uiOutput("GAF_select.ui"),
                  ),
-                 
    ),
-   
-		)
+)
 
 # Server logic ----
 server <- function(input, output, session) {

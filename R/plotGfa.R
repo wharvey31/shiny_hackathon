@@ -18,7 +18,7 @@
 #' @author David Porubsky, Sean McGee & Karynne Patterson
 #' @export
 #' 
-plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL) {
+plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, gaf.anno_file=NULL) {
   ## Check user input ##
   ######################
   ## Get data from loaded GFA file
@@ -148,40 +148,44 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
 				 
   ## Visualize Genes/Annotations ##
   #################################
-  table<-readGaf(gaf.file)
-  #find where in gaps starts and stops of gene limits lie in our image
-  gene_int<-findInterval(table$path.start,segms.df$start)
-  gene_intEnd<-findInterval(table$path.end,segms.df$end)
-  #space the starts and stops by # of gaps
-  shifts <- table$path.start + ((gene_int - 1)*spacer)
-  shiftsEnd <- table$path.end + ((gene_intEnd )*spacer)
-  gene_tbl<-unique(as.data.frame(cbind(as.numeric(shifts),as.numeric(shiftsEnd),table$q.name)))
-  #create new dataframe for plotting
-  gene_shift.gr<-GenomicRanges::GRanges(seqnames = 'genes', 
-                            ranges = IRanges::IRanges(start = as.numeric(gene_tbl$V1), end = as.numeric(gene_tbl$V2), id = gene_tbl$V3))
-  db<-disjointBins(gene_shift.gr)
-  gene.df <- as.data.frame(gene_shift.gr)
-  gene.df <- cbind(gene.df, db)
-  final.plt +
-    geom_rect(data=gene.df, aes(xmin=start, xmax=end, ymin=-1-db, ymax=-2-db, size=2, alpha=0.2), 
-              fill = 'darkblue' ) + 
-              geom_text(data=gene.df, aes(x=start, y= -1.5-db, label = id, size = 1.5), hjust = 1)
-  				    
+  if (!is.null(gaf.anno_file)) {
+    table<-readGaf(gaf.anno_file)
+    #find where in gaps starts and stops of gene limits lie in our image
+    gene_int<-findInterval(table$path.start,segms.df$start)
+    gene_intEnd<-findInterval(table$path.end,segms.df$end)
+    #space the starts and stops by # of gaps
+    shifts <- table$path.start + ((gene_int - 1)*spacer)
+    shiftsEnd <- table$path.end + ((gene_intEnd )*spacer)
+    gene_tbl<-unique(as.data.frame(cbind(as.numeric(shifts),as.numeric(shiftsEnd),table$q.name)))
+    #create new dataframe for plotting
+    gene_shift.gr<-GenomicRanges::GRanges(seqnames = 'genes', 
+                              ranges = IRanges::IRanges(start = as.numeric(gene_tbl$V1), end = as.numeric(gene_tbl$V2), id = gene_tbl$V3))
+    db<-disjointBins(gene_shift.gr)
+    gene.df <- as.data.frame(gene_shift.gr)
+    gene.df <- cbind(gene.df, db)
+    final.plt +
+      geom_rect(data=gene.df, aes(xmin=start, xmax=end, ymin=-1-db, ymax=-2-db, size=2, alpha=0.2), 
+                fill = 'darkblue' ) + 
+                geom_text(data=gene.df, aes(x=start, y= -1.5-db, label = id, size = 1.5), hjust = 1)
+    				    
+    
+    ## Apply theme
+    graph.theme <- theme(axis.title.y=element_blank(),
+                         axis.text.y=element_blank(),
+                         axis.ticks.y=element_blank(),
+                         axis.title.x=element_blank(),
+                         panel.grid.major = element_blank(), 
+                         panel.grid.minor = element_blank(),
+                         panel.background = element_blank())
+    final.plt <- final.plt + graph.theme
+    
+    ## Change ylim 
+    if (is.numeric(y.limit))
+  	  final.plt <- final.plt + ylim(-y.limit,y.limit)
+    
+    ## Return final plotting object
+  }
   
-  ## Apply theme
-  graph.theme <- theme(axis.title.y=element_blank(),
-                       axis.text.y=element_blank(),
-                       axis.ticks.y=element_blank(),
-                       axis.title.x=element_blank(),
-                       panel.grid.major = element_blank(), 
-                       panel.grid.minor = element_blank(),
-                       panel.background = element_blank())
-  final.plt <- final.plt + graph.theme
-  
-  ## Change ylim 
-  if (is.numeric(y.limit))
-	  final.plt <- final.plt + ylim(-y.limit,y.limit)
-  
-  ## Return final plotting object
   return(final.plt)
+  
 }
