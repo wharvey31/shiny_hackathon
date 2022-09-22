@@ -80,15 +80,26 @@ ui <- fluidPage(
 							placeholder="No file selected"
 							),
 						uiOutput("contig_selection"),
-						# Not so sure about this part yet
-						selectInput(
-						  "select_graph",
-						  "Graph",
-						  selected = NULL, 
-						  multiple = FALSE,
-						  list("outputfile1","outputfile2")
-						  ),
-						shinyjs::disabled(checkboxInput("display_frequency_checkbox", "Show frequency", value = FALSE)),
+						# Haplotype Selection
+						shinyjs::disabled(
+							selectInput(
+								"select_graph",
+								"Graph",
+								selected = NULL, 
+								multiple = FALSE,
+								list()
+							)
+						),
+						shinyjs::disabled(
+							radioButtons(
+								"showFrequency",
+								"Show Frequency:",
+								c("None" = "none",
+									"Width" = "width",
+									"Color" = "color"),
+								inline=TRUE
+							)
+						),
 						## Download Fasta file and Bed file
 						downloadButton("Fasta_download", 
 						               "FASTA file Download",
@@ -250,18 +261,27 @@ server <- function(input, output, session) {
 	
 	observeEvent(haplotypes(), {
 		updateSelectInput(session = session, inputId = "select_graph", choices = haplotypes())
+		shinyjs::enable("select_graph")
+		shinyjs::enable("showFrequency")
 	})
-	
+
 	# Haplotype selection
 	haplotype <- eventReactive(input$select_graph, {
 		input$select_graph			
 	})
-	
+
+	# Show Frequency selection
+	show_frequency <- eventReactive(input$showFrequency, {
+		showFrequencySelection <- input$showFrequency
+		if (showFrequencySelection == "none")
+			showFrequencySelection = NULL
+		return(showFrequencySelection)
+	})
+
 	observeEvent(haplotypes(), {
 		output$ggdag  <- renderPlot({
-					
-			full_plot <- plotGfa(gfa.tbl=graph_df())
 			
+			full_plot <- plotGfa(gfa.tbl=graph_df())
 			max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
 			
 			haplotype_links <- subset(haplotypes_df(), haplotype==haplotype())
@@ -269,7 +289,11 @@ server <- function(input, output, session) {
 			
 			haplotype_info = list(segments = haplotype_segments, links = haplotype_links)
 			
-			plotGfa(gfa.tbl=haplotype_info, y.limit=max_abs_value) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+			link.frequency <- show_frequency()
+			gaf.links <- NULL
+			if(!is.null(link.frequency))
+				gaf.links <- haplotype_links
+			plotGfa(gfa.tbl=haplotype_info, y.limit=max_abs_value, link.frequency=link.frequency, gaf.links=gaf.links) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
 		})
 	})
 	
