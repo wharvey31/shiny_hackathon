@@ -53,6 +53,7 @@ ui <- fluidPage(
 							buttonLabel="Browse",
 							placeholder="No file selected"
 							),
+						uiOutput("contig_selection"),
 						# Not so sure about this part yet
 						selectInput(
 						  "select_graph","Graph",selected = NULL, multiple = FALSE,list("outputfile1","outputfile2")),
@@ -193,7 +194,7 @@ server <- function(input, output) {
         return()
       }
       cur_df = load_annotation_bed(bed_path = input$bed$datapath, color_col = 9)
-      p = plot_bed_annot_track(track_name = "testing", bed_df = cur_df, p = NULL)
+      p = plot_bed_annot_track(track_name = "", bed_df = cur_df, p = NULL)
       p
     })
     output$bed_plots.ui <- renderUI({
@@ -204,6 +205,17 @@ server <- function(input, output) {
                  hover = "plot_hover",
                  brush = "plot_brush",
                  inline = F)
+    })
+    
+    contigs <- reactive({
+      cur_bed = get_bed_df()
+      get_haplotype_names(cur_bed)
+    }
+    )
+    
+    #choices of contig:
+    output$contig_selection = renderUI({
+      selectInput(inputId = 'contig_selection',label = 'Contig Highlight', contigs())
     })
 }
 
