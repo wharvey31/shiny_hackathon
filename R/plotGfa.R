@@ -187,6 +187,7 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.d
   ## Visualize Genes/Annotations ##
   #################################
   if (!is.null(gaf.annotation)) {
+    spacer <- sum(gfa.tbl$segments$LN) * spacer.width
     ## Find where in gaps starts and stops of gene limits lie in our image
     gene_int <- findInterval(gaf.annotation$path.start,segms.df$start)
     gene_intEnd <- findInterval(gaf.annotation$path.end,segms.df$end)

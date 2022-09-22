@@ -79,6 +79,13 @@ ui <- fluidPage(
 							buttonLabel="Browse",
 							placeholder="No file selected"
 							),
+						fileInput(
+						  "GAF_annotation",
+						  "GAF annotation file",
+						  multiple=FALSE, 
+						  buttonLabel="Browse",
+						  placeholder="No file selected"
+						),
 						uiOutput("contig_selection"),
 						# Haplotype Selection
 						disabled(
@@ -108,15 +115,8 @@ ui <- fluidPage(
 										  "Highlight" = "highlight"),
 										inline=TRUE
 								)
-						),
+						)
 						## Download Fasta file and Bed file
-						downloadButton("Fasta_download", 
-						               "FASTA file Download",
-						               icon = shiny::icon("download")
-						               ),
-						downloadButton("BED_download", 
-						               "BED file Download",
-						               icon = shiny::icon("download"))
 						),
 
 				absolutePanel(id = "panel1",
@@ -227,7 +227,12 @@ server <- function(input, output, session) {
       get_haplotype_names(cur_bed)
     }
     )
-    
+    observeEvent(input$GAF_annotation, {
+      output$ggdag  <- renderPlot({
+        plotGfa(gfa.tbl=graph_df(), gaf.annotation=readGaf(input$GAF_annotation$datapath)) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+      })
+    }
+    )
     #choices of contig:
     output$contig_selection = renderUI({
       selectInput(inputId = 'contig_selection',label = 'Contig Highlight', contigs())
