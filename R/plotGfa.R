@@ -145,6 +145,28 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
       scale_x_continuous(labels = scales::comma) + scale_size_binned(range = c(0,2)) +
       scale_color_gradientn(colours = pal)
   }  
+				 
+  ## Visualize Genes/Annotations ##
+  #################################
+  table<-readGaf(gaf.file)
+  #find where in gaps starts and stops of gene limits lie in our image
+  gene_int<-findInterval(table$path.start,segms.df$start)
+  gene_intEnd<-findInterval(table$path.end,segms.df$end)
+  #space the starts and stops by # of gaps
+  shifts <- table$path.start + ((gene_int - 1)*spacer)
+  shiftsEnd <- table$path.end + ((gene_intEnd )*spacer)
+  gene_tbl<-unique(as.data.frame(cbind(as.numeric(shifts),as.numeric(shiftsEnd),table$q.name)))
+  #create new dataframe for plotting
+  gene_shift.gr<-GenomicRanges::GRanges(seqnames = 'genes', 
+                            ranges = IRanges::IRanges(start = as.numeric(gene_tbl$V1), end = as.numeric(gene_tbl$V2), id = gene_tbl$V3))
+  db<-disjointBins(gene_shift.gr)
+  gene.df <- as.data.frame(gene_shift.gr)
+  gene.df <- cbind(gene.df, db)
+  final.plt +
+    geom_rect(data=gene.df, aes(xmin=start, xmax=end, ymin=-1-db, ymax=-2-db, size=2, alpha=0.2), 
+              fill = 'darkblue' ) + 
+              geom_text(data=gene.df, aes(x=start, y= -1.5-db, label = id, size = 1.5), hjust = 1)
+  				    
   
   ## Apply theme
   graph.theme <- theme(axis.title.y=element_blank(),
