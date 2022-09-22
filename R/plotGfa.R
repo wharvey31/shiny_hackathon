@@ -14,6 +14,7 @@
 #' @param gaf.annotation  A \code{tibble} table containing path coordinates where given annotation map on the graph. (readGaf output)
 #' @param link.frequency Visualize link frequency either by the thickness of a link ('width') or a color gradient ('color').
 #' @param highlight.haplotype A character string of an haplotype ID to for which the graph path will be highlighted in red color.
+#' @param highlight.segments A vector of segment IDs to be highlighted.
 #' @importFrom GenomicRanges shift GRanges
 #' @importFrom IRanges IRanges
 #' @importFrom S4Vectors lapply
@@ -21,10 +22,7 @@
 #' @author David Porubsky, Sean McGee & Karynne Patterson
 #' @export
 #' 
-
-plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.degree=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, gaf.annotation=NULL, link.frequency=NULL, highlight.haplotype=NULL) {
-
-
+plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.degree=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, gaf.annotation=NULL, link.frequency=NULL, highlight.haplotype=NULL, highlight.segments=NULL) {
   ## Check user input ##
   ######################
   ## Get link data from loaded GFA file
@@ -140,7 +138,14 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.d
     } else if (shape == 'roundrect') {
       segms.plt <- ggplot(nodes.df, aes(x = x, y = 0, group=group)) +
         geom_shape(radius = unit(0.25, 'cm'))
-    }  
+    }
+    ## Highlight haplotype segments
+    if (!is.null(highlight.segments)) {
+      if (any(highlight.segments %in% segms.df$id)) {
+        segms.plt <- segms.plt +
+          geom_rect(data=segms.df[segms.df$id %in% c('s1', 's6', 's7', 's32'),], aes(xmin=start, xmax=end, ymin=-0.4, ymax=0.4), size=2, colour = 'red', fill = 'red')
+      }    
+    }
   } else if (layout == 'offset') {
     if (shape == 'rectangle') {
       segms.plt <- ggplot() +
@@ -149,7 +154,14 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.d
     } else if (shape == 'roundrect') {
       segms.plt <- ggplot(nodes.df, aes(x = x, y = rank, group=group)) +
         geom_shape(radius = unit(0.25, 'cm'))
-    }  
+    } 
+    ## Highlight haplotype segments
+    if (!is.null(highlight.segments)) {
+      if (any(highlight.segments %in% segms.df$id)) {
+        segms.plt <- segms.plt +
+          geom_rect(data=segms.df[segms.df$id %in% c('s1', 's6', 's7', 's32'),], aes(xmin=start, xmax=end, ymin=-0.4, ymax=0.4), size=2, colour = 'red', fill = 'red')
+      }    
+    }
   }  
   
   ## Visualize links ##
