@@ -236,16 +236,16 @@ server <- function(input, output, session) {
 
 	# Haplotype select population
 	haplotypes_df <- reactive({
-				gafToLinks(gaf.file = input$GAF_input2$datapath)
-			})
+		gafToLinks(gaf.file = input$GAF_input2$datapath)
+	})
 	
 	haplotypes <- eventReactive(input$GAF_input2,{
-				haplotypes_df()$SN[!duplicated(haplotypes_df()$SN)]
-			})
+		haplotypes_df()$SN[!duplicated(haplotypes_df()$SN)]
+	})
 	
 	observeEvent(haplotypes(), {
-				updateSelectInput(session = session, inputId = "select_graph", choices = haplotypes())
-			})
+		updateSelectInput(session = session, inputId = "select_graph", choices = haplotypes())
+	})
 	
 	# Haplotype selection
 	haplotype <- eventReactive(input$select_graph, {
@@ -258,7 +258,7 @@ server <- function(input, output, session) {
 			full_plot <- plotGfa(gfa.tbl=graph_df())
 			max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
 			
-			haplotype_links <- subset(haplotypes_df(), SN==haplotype())
+			haplotype_links <- subset(haplotypes_df(), haplotype==haplotype())
 			haplotype_segments <- segments_for_haplotype_links(graph_df()$segments, haplotype_links)
 			
 			haplotype_info = list(segments = haplotype_segments, links = haplotype_links)

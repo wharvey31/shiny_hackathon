@@ -41,6 +41,16 @@ gafToLinks <- function(gaf.file=NULL) {
     all.links[[i]] <-  links
   }
   all.links <-  dplyr::bind_rows(all.links)
+
+  # Add halpotype
+  haplotype_name <- function(row, output) {
+	  underscore_locations <- unlist(gregexpr("_", row[6]))
+	  haplotype_name <- substr(row[6], 1, underscore_locations[2] -1)
+	  return(haplotype_name)
+  }
+  all.links$haplotype <- apply(all.links, 1, haplotype_name) 
+  
+  
   ## Return links object
   return(all.links)
 }
