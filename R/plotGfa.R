@@ -19,7 +19,7 @@
 #' @export
 #' 
 
-plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.anno_file=NULL) {
+plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.anno_file=NULL) {
 
   ## Check user input ##
   ######################
@@ -203,6 +203,10 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
                        panel.grid.minor = element_blank(),
                        panel.background = element_blank())
   final.plt <- final.plt + graph.theme
+  
+  ## Change ylim 
+  if (is.numeric(y.limit))
+	  final.plt <- final.plt + ylim(-y.limit,y.limit)
   
   ## Return final plotting object
   return(final.plt)
