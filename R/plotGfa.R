@@ -9,8 +9,10 @@
 #' @param layout Overall layout of the graph, either 'linear' or 'circular'.
 #' @param shape Either 'rectangle' or 'roundrect' to plot graph nodes.
 #' @param arrow.head Default 'closed' TODO what are the other options?
-#' @param gaf.links A \code{tibble} table containing links present in each haplotype after alignment to the graph.
+#' @param gaf.links A \code{tibble} table containing links present in each haplotype after alignment to the graph. (GafToLinks output)
+#' @param gaf.annotation  A \code{tibble} table containing path coordinates where given annotation map on the graph. (readGaf output)
 #' @param link.frequency Visualize link frequency either by the thickness of a link ('width') or a color gradient ('color').
+#' @param highlight.haplotype A character string of an haplotype ID to for which the graph path will be highlighted in red color.
 #' @importFrom GenomicRanges shift GRanges
 #' @importFrom IRanges IRanges
 #' @importFrom S4Vectors lapply
@@ -18,6 +20,7 @@
 #' @author David Porubsky, Sean McGee & Karynne Patterson
 #' @export
 #' 
+
 
 plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.anno_file=NULL) {
 
@@ -154,25 +157,23 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
 				 
   ## Visualize Genes/Annotations ##
   #################################
-  if (!is.null(gaf.anno_file)) {
-    table<-readGaf(gaf.anno_file)
-    #find where in gaps starts and stops of gene limits lie in our image
-    gene_int<-findInterval(table$path.start,segms.df$start)
-    gene_intEnd<-findInterval(table$path.end,segms.df$end)
-    #space the starts and stops by # of gaps
-    shifts <- table$path.start + ((gene_int - 1)*spacer)
-    shiftsEnd <- table$path.end + ((gene_intEnd )*spacer)
-    gene_tbl<-unique(as.data.frame(cbind(as.numeric(shifts),as.numeric(shiftsEnd),table$q.name)))
-    #create new dataframe for plotting
-    gene_shift.gr<-GenomicRanges::GRanges(seqnames = 'genes', 
-                              ranges = IRanges::IRanges(start = as.numeric(gene_tbl$V1), end = as.numeric(gene_tbl$V2), id = gene_tbl$V3))
-    db<-disjointBins(gene_shift.gr)
+  if (!is.null(gaf.annotation)) {
+    ## Find where in gaps starts and stops of gene limits lie in our image
+    gene_int <- findInterval(gaf.annotation$path.start,segms.df$start)
+    gene_intEnd <- findInterval(gaf.annotation$path.end,segms.df$end)
+    ## Space the starts and stops by # of gaps
+    shifts <- gaf.annotation$path.start + ((gene_int - 1) * spacer)
+    shiftsEnd <- gaf.annotation$path.end + ((gene_intEnd ) * spacer)
+    gene_tbl <- unique(as.data.frame(cbind(as.numeric(shifts), as.numeric(shiftsEnd), gaf.annotation$q.name)))
+    ## Create new dataframe for plotting
+    gene_shift.gr <- GenomicRanges::GRanges(seqnames = 'genes', 
+                                            ranges = IRanges::IRanges(start = as.numeric(gene_tbl$V1), end = as.numeric(gene_tbl$V2), id = gene_tbl$V3))
+    gene_shift.gr$level <- disjointBins(gene_shift.gr) * -1
     gene.df <- as.data.frame(gene_shift.gr)
-    gene.df <- cbind(gene.df, db)
+    gene.df$midpoint <- gene.df$start + ((gene.df$end - gene.df$start) / 2)
     final.plt <- final.plt +
-      geom_rect(data=gene.df, aes(xmin=start, xmax=end, ymin=-1-db, ymax=-2-db, size=2, alpha=0.2), 
-                fill = 'darkblue' ) + 
-                geom_text(data=gene.df, aes(x=start, y= -1.5-db, label = id, size = 1.5), hjust = 1)
+      geom_rect(data=gene.df, aes(xmin=start, xmax=end, ymin=level-1, ymax=level-2), alpha=0.2, fill = 'darkblue') + 
+      geom_text(data=gene.df, aes(x=midpoint, y=level-1.5, label = id), size=2, hjust = 0.5, color='black')
   }
   
   ## Visualize haplotype path ##
@@ -191,7 +192,6 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
       final.plt <- final.plt +
         geom_rect(data=hap.segms.df, aes(xmin=start, xmax=end, ymin=rank-0.4, ymax=rank + 0.4), size=2, colour = 'red', fill = 'red') +
         ggforce::geom_bezier(data=arcs.df[arcs.df$link.ids %in% hap.links.ids,], aes(x = x, y = y, group=group, color=freq), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE, color='red')
-        scale_color_gradientn(colours = pal)
     }  
   }  
   ## Apply theme
