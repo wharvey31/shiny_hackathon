@@ -12,8 +12,6 @@ library(readr)
 # Source helper functions -----
 # source("helpers.R")
 loadSupport()
-source("shiny_hackathon/R/plotGfa.R")
-source("shiny_hackathon/R/plot_arrow_linear_annotations.R")
 
 # functions
 # function to change rgb input into hex color
@@ -30,7 +28,6 @@ ui <- fluidPage(
       tags$style("#panel1 {height: 100px; position: fixed}"),
       tags$style("#panel2 {
               overflow: auto;
-              background: orange;
               margin-left: width:20%;
           }")
       ),
@@ -99,7 +96,7 @@ ui <- fluidPage(
        absolutePanel(id = "panel2", 
                      top = "50%", left = "35%", height = "40%", width = "60%", right = "10%",bottom = "10%",
                      fluidRow(## Plot Ouput of linear visualization
-                       p("Linear Visualization Window"),
+                       # p("Linear Visualization Window"),
                        uiOutput("bed_plots.ui"),
                      ),
                  

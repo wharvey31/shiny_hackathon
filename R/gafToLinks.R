@@ -14,7 +14,7 @@ gafToLinks <- function(gaf.file=NULL) {
   }
   
   ## Read GAF file
-  gaf.df <- readGaf(gaf.file = '/home/porubsky/WORK/Hackathon_2022/Data/roi17q21.31/roi17q21.31.minigraph.baseAln.gaf')
+  gaf.df <- readGaf(gaf.file = gaf.file)
   ## Remove NAs
   #gaf.df <- gaf.df[!is.na(gaf.df$s.start),]
   

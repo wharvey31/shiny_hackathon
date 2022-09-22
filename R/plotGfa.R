@@ -24,15 +24,17 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
   ## Get data from loaded GFA file
   segments <- gfa.tbl$segments
   links <- gfa.tbl$links
+  links.ids <- paste(links$from, links$to, sep = '_')
   
   ## Get link frequency from links if gaf.links are defined
   if (!is.null(gaf.links)) {
     gaf.links.ids <- paste(gaf.links$from, gaf.links$to, sep = '_')
     link.freq <- as.data.frame(table(gaf.links.ids))
     link.freq <- link.freq[order(link.freq$Freq, decreasing = TRUE),]
+    links$link.freq <- link.freq$Freq[match(links.ids, link.freq$gaf.links.ids)]
   }
-  links.ids <- paste(links$from, links$to, sep = '_')
-  links$link.freq <- link.freq$Freq[match(links.ids, link.freq$gaf.links.ids)]
+  
+  
   
   ## Filter data ##
   #################
