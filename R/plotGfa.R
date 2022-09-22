@@ -2,7 +2,7 @@
 #' 
 #' This function takes an output from readGfa.R function and makes a graph plot (Adjust annotation!!!)
 #'
-#' @param gfa.tbl A path to a GFA file containing sequence graph.
+#' @param gfa.tbl A \code{list} of data tables needed for plotting after running 'readGfa' function.
 #' @param min.segment.length A minimum size of segment to be plotted.
 #' @param spacer.width User defined fraction to the total segment length to be used as node spacer.
 #' @param order.by Define a column to be used for node ordering. [TODO]
@@ -18,11 +18,13 @@
 #' @author David Porubsky, Sean McGee & Karynne Patterson
 #' @export
 #' 
-plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, gaf.anno_file=NULL) {
+
+plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.anno_file=NULL) {
+
   ## Check user input ##
   ######################
-  ## Get data from loaded GFA file
-  segments <- gfa.tbl$segments
+  ## Get link data from loaded GFA file
+  #segments <- gfa.tbl$segments
   links <- gfa.tbl$links
   links.ids <- paste(links$from, links$to, sep = '_')
   
@@ -33,8 +35,15 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
     link.freq <- link.freq[order(link.freq$Freq, decreasing = TRUE),]
     links$link.freq <- link.freq$Freq[match(links.ids, link.freq$gaf.links.ids)]
   }
-  
-  
+  ## Highlight haplotype
+  if (!is.null(highlight.haplotype) & !is.null(gaf.links)) {
+    if (highlight.haplotype %in% gaf.links$SN) {
+      hap.links <- gaf.links[gaf.links$SN %in% highlight.haplotype,]
+      hap.links.ids <- paste(hap.links$from, hap.links$to, sep = '_')
+      hap.segments <- unique(hap.links$from, hap.links$to)
+    }
+  }
+
   
   ## Filter data ##
   #################
@@ -44,39 +53,32 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
   
   ### Prepare data for plotting ###
   #################################
-  ## Define segment spacer as fraction of the total lenght of all segments
-  spacer <- sum(segments$LN) * spacer.width
-  
-  ## Order segments ##
-  if (order.by == 'offset') {
-    segments <- segments[order(segments$SO),]
-  }  
-  
-  ## Space out graph segments into a single line ##
-  segms.gr <- GenomicRanges::GRanges(seqnames = 'nodes', 
-                                     ranges = IRanges::IRanges(start = 1, end = segments$LN), id = segments$segment.id, rank=segments$SR)
-  shifts <- GenomicRanges::width(segms.gr)
-  shifts <- cumsum(shifts + spacer)
-  segms.gr[-1] <- GenomicRanges::shift(segms.gr[-1], shift = shifts[-length(shifts)])
+  ## Define segment spacer as fraction of the total length of all segments
+  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl)
+  segms.df <- gfa.tbl$graph.plt.coords
   
   ## Define segments ##
   #####################
-  segms.df <- as.data.frame(segms.gr)
+  ## All segments
   nodes.df <- data.frame(x=c(rbind(segms.df$start, segms.df$end)),
                          y=0,
                          group=rep(1:nrow(segms.df), each=2),
                          rank=rep(segms.df$rank, each=2))
   segms.df$midpoint <- segms.df$start + ((segms.df$end - segms.df$start) / 2)
+  ## Get haplotype segments
+  hap.segms.df <- segms.df[segms.df$id %in% hap.segments,]
   
   ## Define links ##
   ##################
+  ## All links
   link.start <- ifelse(links$from.orient == '+', 
                        segms.df$end[match(links$from, segms.df$id)], 
                        segms.df$start[match(links$from, segms.df$id)])
   link.end <- ifelse(links$to.orient == '+', 
                      segms.df$start[match(links$to, segms.df$id)],
                      segms.df$end[match(links$to, segms.df$id)])
-  x.coords <- c(rbind(segms.df$end[match(links$from, segms.df$id)], segms.df$start[match(links$to, segms.df$id)]))
+  #x.coords <- c(rbind(segms.df$end[match(links$from, segms.df$id)], segms.df$start[match(links$to, segms.df$id)]))
+  x.coords <- c(rbind(link.start, link.end))
   y.coords <- c(rbind(segms.df$rank[match(links$from, segms.df$id)], segms.df$rank[match(links$to, segms.df$id)]))
   
   ## Impose arc height based on the segment order
@@ -93,6 +95,9 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
                           y=c(rbind(y.coords[c(TRUE, FALSE)], arc.height, arc.height, y.coords[c(FALSE, TRUE)])),
                           group=rep(1:nrow(links), each=4))
   }
+  ## Add link IDs
+  arcs.df$link.ids <- rep(links.ids, each=4)
+  
   ## Add frequency to each link if defined and get a corrsponding link label
   if (!is.null(gaf.links)) {
     arcs.df$freq=rep(links$link.freq, each=4)
@@ -163,29 +168,41 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.wid
     db<-disjointBins(gene_shift.gr)
     gene.df <- as.data.frame(gene_shift.gr)
     gene.df <- cbind(gene.df, db)
-    final.plt +
+    final.plt <- final.plt +
       geom_rect(data=gene.df, aes(xmin=start, xmax=end, ymin=-1-db, ymax=-2-db, size=2, alpha=0.2), 
                 fill = 'darkblue' ) + 
                 geom_text(data=gene.df, aes(x=start, y= -1.5-db, label = id, size = 1.5), hjust = 1)
-    				    
-    
-    ## Apply theme
-    graph.theme <- theme(axis.title.y=element_blank(),
-                         axis.text.y=element_blank(),
-                         axis.ticks.y=element_blank(),
-                         axis.title.x=element_blank(),
-                         panel.grid.major = element_blank(), 
-                         panel.grid.minor = element_blank(),
-                         panel.background = element_blank())
-    final.plt <- final.plt + graph.theme
-    
-    ## Change ylim 
-    if (is.numeric(y.limit))
-  	  final.plt <- final.plt + ylim(-y.limit,y.limit)
-    
-    ## Return final plotting object
   }
   
-  return(final.plt)
+  ## Visualize haplotype path ##
+  ##############################
+  if (!is.null(highlight.haplotype)) {
+    if (is.null(link.frequency)) {
+      final.plt <- final.plt +
+        geom_rect(data=hap.segms.df, aes(xmin=start, xmax=end, ymin=rank-0.4, ymax=rank + 0.4), size=2, colour = 'red', fill = 'red') +
+        ggforce::geom_bezier(data=arcs.df[arcs.df$link.ids %in% hap.links.ids,], aes(x = x, y = y, group=group), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE, color='red')
+    } else if (link.frequency == 'width') {  
+      final.plt <- final.plt +
+        geom_rect(data=hap.segms.df, aes(xmin=start, xmax=end, ymin=rank-0.4, ymax=rank + 0.4), size=2, colour = 'red', fill = 'red') +
+        ggforce::geom_bezier(data=arcs.df[arcs.df$link.ids %in% hap.links.ids,], aes(x = x, y = y, group=group, size=freq), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE, color='red')
+    } else if (link.frequency == 'color') {
+      pal <- wesanderson::wes_palette(name = "Zissou1", n = max(link.label$freq), type = "continuous")
+      final.plt <- final.plt +
+        geom_rect(data=hap.segms.df, aes(xmin=start, xmax=end, ymin=rank-0.4, ymax=rank + 0.4), size=2, colour = 'red', fill = 'red') +
+        ggforce::geom_bezier(data=arcs.df[arcs.df$link.ids %in% hap.links.ids,], aes(x = x, y = y, group=group, color=freq), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE, color='red')
+        scale_color_gradientn(colours = pal)
+    }  
+  }  
+  ## Apply theme
+  graph.theme <- theme(axis.title.y=element_blank(),
+                       axis.text.y=element_blank(),
+                       axis.ticks.y=element_blank(),
+                       axis.title.x=element_blank(),
+                       panel.grid.major = element_blank(), 
+                       panel.grid.minor = element_blank(),
+                       panel.background = element_blank())
+  final.plt <- final.plt + graph.theme
   
+  ## Return final plotting object
+  return(final.plt)
 }
