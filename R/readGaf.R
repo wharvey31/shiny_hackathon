@@ -89,7 +89,7 @@ readGaf <- function(gaf.file = NULL) {
   close(file.con)
   paths.tbl <- dplyr::bind_rows(paths)
   paths.tbl$s.name <- gsub(paths.tbl$s.name, pattern = '<|>', replacement = '')
-  num.cols <- c(2, 3, 4, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20)
+  num.cols <- c(2, 3, 4, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 23)
   paths.tbl[,num.cols] <- dplyr::bind_cols(S4Vectors::lapply(paths.tbl[num.cols], as.numeric))
   return(paths.tbl)
 }

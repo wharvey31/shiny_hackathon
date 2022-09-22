@@ -6,6 +6,7 @@ library(GenomicRanges)
 library(gggenes)
 library(tidyverse)
 library(readr)
+# library(Cairo)
 
 
 # Source helper functions -----
@@ -13,6 +14,14 @@ library(readr)
 loadSupport()
 source("shiny_hackathon/R/plotGfa.R")
 source("shiny_hackathon/R/plot_arrow_linear_annotations.R")
+
+# functions
+# function to change rgb input into hex color
+rgb_to_hex <- function(rgb_comm){
+  rgb_comm = strsplit(split = ",", x = rgb_comm) %>% unlist()
+  return(rgb(red = rgb_comm[1], green = rgb_comm[2], blue = rgb_comm[3], maxColorValue = 255))
+}
+
 
 # User interface ----
 ui <- fluidPage(
@@ -37,6 +46,7 @@ ui <- fluidPage(
 							buttonLabel="Browse",
 							placeholder="No file selected",
 							accept = c("text/plain",".txt")),
+
 						## Input BED file
 						fileInput(
 							"bed",
@@ -55,25 +65,36 @@ ui <- fluidPage(
 							),
 						# Not so sure about this part yet
 						selectInput(
-						  "select_graph","Graph",selected = NULL, multiple = FALSE,list("outputfile1","outputfile2")),
-						
-						
+						  "select_graph",
+						  "Graph",
+						  selected = NULL, 
+						  multiple = FALSE,
+						  list("outputfile1","outputfile2")
+						  ),
 						## Download Fasta file and Bed file
-						downloadButton("Fasta_download", "FASTA file Download",icon = shiny::icon("download")),
-						downloadButton("BED_download", "BED file Download",icon = shiny::icon("download"))
+						downloadButton("Fasta_download", 
+						               "FASTA file Download",
+						               icon = shiny::icon("download")
+						               ),
+						downloadButton("BED_download", 
+						               "BED file Download",
+						               icon = shiny::icon("download"))
 						),
 				
 				mainPanel(
-					        "Graph Visualization Window",
+					        # "Graph Visualization Window",
 
 					        ## Plot Ouput of graphic visualization
 					        plotOutput(
 							"ggdag",
 							"Graph Visualization Window",
 							width="100%",
-							height="100px",
-							brush=brushOpts(id="plot_brush")
+      							height="400px",
+      							brush=brushOpts(id="graph_brush", resetOnNew = TRUE),
+							      click="graph_click",
+      							dblclick = "graph_dblclick",
 						        ),
+                  tableOutput("graph_point"),
 					),
        absolutePanel(id = "panel2", 
                      top = "50%", left = "35%", height = "40%", width = "60%", right = "10%",bottom = "10%",
@@ -87,79 +108,33 @@ ui <- fluidPage(
 
 # Server logic ----
 server <- function(input, output) {
-  spacer.width <- reactive({
-    input$spacer
-    })
 	# Read the rGFA file
-	output$contents <- renderTable({
-		req(input$rgfaFile)
-	  df <- readGfa(gfa.file = input$rgfaFile$datapath, 
-	                store.fasta = 'FALSE')
-		return(df$segments)
+	ranges <- reactiveValues(x = NULL, y = NULL)
+	observeEvent(input$graph_dblclick, {
+		brush <- input$graph_brush
+		if (!is.null(brush)) {
+			ranges$x <- c(brush$xmin, brush$xmax)
+		} else {
+			ranges$x <- NULL
+		}
 	})
-
+	graph_df <- reactive({
+		readGfa(gfa.file = input$rgfaFile$datapath, 
+			store.fasta = 'FALSE')
+	})
 	# Plot the graph
 	output$ggdag <- renderPlot({
-	  req(input$rgfaFile)
-	  df <- readGfa(gfa.file = input$rgfaFile$datapath, 
-	                store.fasta = 'FALSE')
-	  segms.gr <- GRanges(seqnames = 'nodes', ranges = IRanges(start = 1, end = df$segments$LN), id= df$segments$segment.id)
-	  shifts <- width(segms.gr)
-	  shifts <- cumsum(shifts + spacer.width())
-	  segms.gr[-1] <- shift(segms.gr[-1], shift = shifts[-length(shifts)])
-	  segms.df <- as.data.frame(segms.gr)
-	  nodes <- data.frame(x=c(rbind(segms.df$start, segms.df$end)),
-	                      y=0,
-	                      group=rep(1:nrow(segms.df), each=2))
-	 
-	  ## Plt nodes/segments
-	  node.plt <- ggplot(nodes, aes(x = x, y = y, group=group)) +
-	    geom_shape(radius = unit(0.5, 'cm'))
-	  
-	  ## Define links
-	  links <- data.frame(from=as.numeric(gsub(df$links$from, pattern = 's', replacement = '')),
-	                      to=as.numeric(gsub(df$links$to, pattern = 's', replacement = '')))
-	  arcs <- c(rbind(segms.df$end[links$from], segms.df$start[links$to]))
-	  
-	  ## Make geom_curve
-	  arcs.df <- data.frame(x=arcs[c(TRUE, FALSE)],
-	                        xend=arcs[c(FALSE, TRUE)],
-	                        y=0,
-	                        yend=0,
-	                        shape=ifelse((links$to - links$from) == 1, 'line', 'curve'))
-	  
-	  curve.graph.plt <- node.plt + 
-	    geom_segment(data=arcs.df[arcs.df$shape == 'line',], aes(x = x, y = y, xend=xend, yend=yend), arrow = arrow(length = unit(0.01, "npc")), inherit.aes = FALSE) +
-	    geom_curve(data=arcs.df[arcs.df$shape == 'curve',], aes(x = x, y = y, xend=xend, yend=yend), ncp = 100, curvature = -1, arrow = arrow(length = unit(0.01, "npc")), inherit.aes = FALSE) +
-	    geom_point(data=arcs.df,  aes(x = x, y = y), inherit.aes = FALSE)
-	  
-	  ## Make geom_bezier
-	  levels <- (links$to - links$from) - 1
-	  arcs.df <- data.frame(x=rep(arcs, each=2),
-	                        y=do.call(c, lapply(levels, function(x) c(0,x,x,0))),
-	                        group=rep(1:nrow(links), each=4))
-	  
-	  node.plt + 
-	    geom_bezier(data=arcs.df, aes(x = x, y = y, group=group), arrow = arrow(length = unit(0.01, "npc")), inherit.aes = FALSE)
-	  })
-					
-	  output$info <- renderText({
-		  xy_str <- function(e) {
-			  if(is.null(e)) return("NULL\n")
-			  paste0("x=", round(e$x, 1), " y=", round(e$y, 1), "\n")
-		  }
-		  xy_range_str <- function(e) {
-			  if(is.null(e)) return("NULL\n")
-			  paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1), 
-				 " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
-		  }
-		  paste0(
-			  "click: ", xy_str(input$plot_click),
-			  "dblclick: ", xy_str(input$plot_dblclick),
-			  "hover: ", xy_str(input$plot_hover),
-			  "brush: ", xy_range_str(input$plot_brush)
-		  )
-	  })
+  		# Wait for rgfa input
+		req(input$rgfaFile)
+		# Plot df and add cartesian 
+		plotGfa(gfa.tbl=graph_df()) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+	})
+	output$graph_point <- renderTable({
+		req(input$graph_click)
+		brushedPoints(graph_df()$segments, input$graph_brush, xvar = "SO", yvar = "SR")
+	})
+
+## Linear Annotations
 	  file_list = reactiveValues()
     observe({
        if( !is.null(input$bed) ){ # & !(input$bed %in% file_list$dList) ){
@@ -205,6 +180,32 @@ server <- function(input, output) {
                  brush = "plot_brush",
                  inline = F)
     })
+
+	## Linear brushing visualization
+	output$info <- renderText({
+		xy_str <- function(e) {
+			if(is.null(e)) return("NULL\n")
+			paste0("x=", round(e$x, 1), " y=", round(e$y, 1), "\n")
+		}
+		
+		xy_range_str <- function(e) {
+			if(is.null(e)) return("NULL\n")
+			paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1))
+		}
+		
+		paste0(
+			"click: ", xy_str(input$plot_click),
+			"dblclick: ", xy_str(input$plot_dblclick),
+			"hover: ", xy_str(input$plot_hover),
+			"brush: ", xy_range_str(input$plot_brush)
+		)
+	})
+	output$plot_brushedpoints <- renderTable({
+		res <- brushedPoints(bed_df(),input$plot_brush,xvar = "start",yvar = NULL,allRows = FALSE)
+		if (nrow(res) == 0)
+			return()
+		res[c("contig","start","stop","name","strand")]
+	})
 }
 
 # Run app ----

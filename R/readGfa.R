@@ -67,7 +67,7 @@ readGfa <- function(gfa.file, store.fasta=FALSE, restrict.gfa.tags=NULL) {
         ## Parse GFA tags
         gfa.tags <- S4Vectors::lapply(fields, function(x) paste(x[7:length(x)]))
         ## Merge objects
-        lnks <- dplyr::bind_cols(dplyr::bind_rows(link.fields[[1]]), processGfaTags(gfa.tags = gfa.tags))
+        lnks <- dplyr::bind_cols(dplyr::bind_rows(link.fields[[1]]), processGfaTags(gfa.tags = gfa.tags, restrict.gfa.tags = restrict.gfa.tags))
         links[[length(links) + 1]] <- lnks
       }
     } else {
