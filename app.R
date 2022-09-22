@@ -260,13 +260,17 @@ server <- function(input, output, session) {
 	})
 	
 	observeEvent(haplotypes(), {
-		updateSelectInput(session = session, inputId = "select_graph", choices = haplotypes())
-		shinyjs::enable("select_graph")
-		shinyjs::enable("showFrequency")
+		# enable haplotype selction and frequency display rediobutton
+		enable("select_graph")
+		enable("showFrequency")
+		
+		# Add the choices to the hapltype selction box
+		input_choices <- c("All", haplotypes())
+		updateSelectInput(session = session, inputId = "select_graph", choices = input_choices)
 	})
 
-	# Haplotype selection
-	haplotype <- eventReactive(input$select_graph, {
+	# Graph selection
+	graph_selected <- eventReactive(input$select_graph, {
 		input$select_graph			
 	})
 
@@ -280,15 +284,16 @@ server <- function(input, output, session) {
 
 	observeEvent(haplotypes(), {
 		output$ggdag  <- renderPlot({
-			
 			full_plot <- plotGfa(gfa.tbl=graph_df())
 			max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
 			
-			haplotype_links <- subset(haplotypes_df(), haplotype==haplotype())
+			haplotype_links <- haplotypes_df()
+			if (graph_selected() != "All") {
+				haplotype_links <- subset(haplotypes_df(), haplotype==graph_selected())
+			}
 			haplotype_segments <- segments_for_haplotype_links(graph_df()$segments, haplotype_links)
-			
 			haplotype_info = list(segments = haplotype_segments, links = haplotype_links)
-			
+				
 			link.frequency <- show_frequency()
 			gaf.links <- NULL
 			if(!is.null(link.frequency))
