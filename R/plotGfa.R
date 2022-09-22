@@ -116,12 +116,17 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.d
   
   ## Add frequency to each link if defined and get a corrsponding link label
   if (!is.null(gaf.links)) {
+    ## Add frequency to each link
     arcs.df$freq=rep(links$link.freq, each=4)
     ## Get link frequency labels
-    link.label <- data.frame(xmin=segms.df$end[match(links$from, segms.df$id)], 
-                              xmax=segms.df$start[match(links$to, segms.df$id)],
-                              arc.height=arc.height,
-                              freq=links$link.freq)
+    # link.label <- data.frame(xmin=segms.df$end[match(links$from, segms.df$id)], 
+    #                           xmax=segms.df$start[match(links$to, segms.df$id)],
+    #                           arc.height=arc.height,
+    #                           freq=links$link.freq)
+    link.label <- data.frame(xmin=link.start, 
+                             xmax=link.end,
+                             arc.height=arc.height,
+                             freq=links$link.freq)
     link.label$midpoint <- link.label$xmin + ((link.label$xmax - link.label$xmin) / 2)
   }  
   
