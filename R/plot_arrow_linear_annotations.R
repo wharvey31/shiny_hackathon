@@ -99,6 +99,10 @@ plot_bed_annot_track = function(track_name, bed_df, p = NULL, facet_col = "conti
   p
 }
 
+get_haplotype_names <- function(bed_df){
+  return(unique(bed_df$contig))
+}
+
 #test
 # dup_bed1 = load_annotation_bed(bed_path = "example_data/HG01071_2/HG01071_2.duplicons.bed", color_col = 9)
 # trf_bed1 = load_annotation_bed(bed_path = "example_data/HG01071_2/HG01071_2.trf.bed")
