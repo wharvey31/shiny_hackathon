@@ -53,7 +53,7 @@ ui <- fluidPage(
 				absolutePanel(id = "side_panel",
 				              top = "20%", left = "1%", height = "70%", width = "30%", bottom = "20%", #right = "80%"
 					    # Initialize shiny jus
-						shinyjs::useShinyjs(),
+						useShinyjs(),
 					    # Input: Select a file ----
 						## Input rGFA file
 						fileInput(
@@ -81,7 +81,7 @@ ui <- fluidPage(
 							),
 						uiOutput("contig_selection"),
 						# Haplotype Selection
-						shinyjs::disabled(
+						disabled(
 							selectInput(
 								"select_graph",
 								"Graph",
@@ -90,15 +90,24 @@ ui <- fluidPage(
 								list()
 							)
 						),
-						shinyjs::disabled(
+						disabled(
 							radioButtons(
 								"showFrequency",
 								"Show Frequency:",
 								c("None" = "none",
-									"Width" = "width",
-									"Color" = "color"),
+								  "Width" = "width",
+								  "Color" = "color"),
 								inline=TRUE
 							)
+						),
+						disabled(
+								radioButtons(
+										"graphType",
+										"Graph Type:",
+										c("Subgraph" = "subgraph",
+										  "Highlight" = "highlight"),
+										inline=TRUE
+								)
 						),
 						## Download Fasta file and Bed file
 						downloadButton("Fasta_download", 
@@ -260,9 +269,10 @@ server <- function(input, output, session) {
 	})
 	
 	observeEvent(haplotypes(), {
-		# enable haplotype selction and frequency display rediobutton
+		# enable haplotype selction and options
 		enable("select_graph")
 		enable("showFrequency")
+		enable("graphType")
 		
 		# Add the choices to the hapltype selction box
 		input_choices <- c("All", haplotypes())
@@ -282,23 +292,37 @@ server <- function(input, output, session) {
 		return(showFrequencySelection)
 	})
 
+	# Graph type
+	graph_type_selected <- eventReactive(input$graphType, {
+				input$graphType			
+			})
+
 	observeEvent(haplotypes(), {
 		output$ggdag  <- renderPlot({
 			full_plot <- plotGfa(gfa.tbl=graph_df())
 			max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
 			
 			haplotype_links <- haplotypes_df()
-			if (graph_selected() != "All") {
+			if (graph_selected() != "All" && graph_type_selected() != "highlight") {
 				haplotype_links <- subset(haplotypes_df(), haplotype==graph_selected())
 			}
 			haplotype_segments <- segments_for_haplotype_links(graph_df()$segments, haplotype_links)
 			haplotype_info = list(segments = haplotype_segments, links = haplotype_links)
 				
 			link.frequency <- show_frequency()
+			highlight.haplotype = NULL
+			if (graph_selected() != "All" && graph_type_selected() == "highlight") {
+				highlight.haplotype = graph_selected()
+			}
 			gaf.links <- NULL
-			if(!is.null(link.frequency))
+			if(!is.null(link.frequency) || !is.null(highlight.haplotype))
 				gaf.links <- haplotype_links
-			plotGfa(gfa.tbl=haplotype_info, y.limit=max_abs_value, link.frequency=link.frequency, gaf.links=gaf.links) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+			plotGfa(
+				gfa.tbl=haplotype_info,
+				y.limit=max_abs_value,
+				link.frequency=link.frequency,
+				gaf.links=gaf.links,
+				highlight.haplotype=highlight.haplotype) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
 		})
 	})
 	

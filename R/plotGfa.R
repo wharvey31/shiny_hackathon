@@ -39,7 +39,7 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.d
   }
   ## Highlight haplotype
   if (!is.null(highlight.haplotype) & !is.null(gaf.links)) {
-    if (highlight.haplotype %in% gaf.links$SN) {
+    if (highlight.haplotype %in% gaf.links$haplotype) {
       hap.links <- gaf.links[gaf.links$SN %in% highlight.haplotype,]
       hap.links.ids <- paste(hap.links$from, hap.links$to, sep = '_')
       hap.segments <- unique(hap.links$from, hap.links$to)
