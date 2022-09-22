@@ -6,6 +6,8 @@ library(GenomicRanges)
 library(gggenes)
 library(tidyverse)
 library(readr)
+library(shinyjs)
+library(wesanderson)
 # library(Cairo)
 
 

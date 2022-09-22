@@ -24,6 +24,7 @@
 
 plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, min.link.degree=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, gaf.annotation=NULL, link.frequency=NULL, highlight.haplotype=NULL) {
 
+
   ## Check user input ##
   ######################
   ## Get link data from loaded GFA file
