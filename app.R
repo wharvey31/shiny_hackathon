@@ -88,7 +88,7 @@ ui <- fluidPage(
 						  multiple = FALSE,
 						  list("outputfile1","outputfile2")
 						  ),
-						shinyjs::disabled(checkboxInput("display_frequency_checkbox", "Show freqeuency", value = FALSE)),
+						shinyjs::disabled(checkboxInput("display_frequency_checkbox", "Show frequency", value = FALSE)),
 						## Download Fasta file and Bed file
 						downloadButton("Fasta_download", 
 						               "FASTA file Download",
@@ -261,6 +261,7 @@ server <- function(input, output, session) {
 		output$ggdag  <- renderPlot({
 					
 			full_plot <- plotGfa(gfa.tbl=graph_df())
+			
 			max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
 			
 			haplotype_links <- subset(haplotypes_df(), haplotype==haplotype())
