@@ -4,6 +4,7 @@
 #'
 #' @param gfa.tbl A \code{list} of data tables needed for plotting after running 'readGfa' function.
 #' @param min.segment.length A minimum size of segment to be plotted.
+#' @param min.link.degree A minimum number of each link is traversed in order to be kept.
 #' @param spacer.width User defined fraction to the total segment length to be used as node spacer.
 #' @param order.by Define a column to be used for node ordering. [TODO]
 #' @param layout Overall layout of the graph, either 'linear' or 'circular'.
@@ -20,7 +21,7 @@
 #' @author David Porubsky, Sean McGee & Karynne Patterson
 #' @export
 #' 
-plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, gaf.annotation=NULL, link.frequency=NULL, highlight.haplotype=NULL) {
+plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, min.link.degree=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, gaf.annotation=NULL, link.frequency=NULL, highlight.haplotype=NULL) {
 
   ## Check user input ##
   ######################
@@ -44,7 +45,12 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
       hap.segments <- unique(hap.links$from, hap.links$to)
     }
   }
-
+  
+  ### Prepare data for plotting ###
+  #################################
+  ## Define segment spacer as fraction of the total length of all segments
+  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl, spacer.width = spacer.width, order.by = order.by)
+  segms.df <- gfa.tbl$graph.plt.coords
   
   ## Filter data ##
   #################
@@ -52,11 +58,17 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
   #segments <- segments[segments$LN >= min.segment.length,]
   #links <- links[links$from %in% segments$segment.id & links$to %in% segments$segment.id,]
   
-  ### Prepare data for plotting ###
-  #################################
-  ## Define segment spacer as fraction of the total length of all segments
-  gfa.tbl <- addGraphPlottingCoords(gfa.tbl = gfa.tbl, spacer.width = spacer.width, order.by = order.by)
-  segms.df <- gfa.tbl$graph.plt.coords
+  ## Filter links by degree
+  if (min.link.degree > 0) {
+    if (!is.null(gaf.links)) {
+      links <- links[links$link.freq > 1,]
+      links.segments <- unique(links$from, links$to)
+      links.ids <- paste(links$from, links$to, sep = '_')
+      segms.df <- segms.df[segms.df$id %in% links.segments,]
+    } else {
+      warning("Object 'gaf.links' not defined, cannot filter based on link degree!!!")
+    }
+  }  
   
   ## Define segments ##
   #####################
