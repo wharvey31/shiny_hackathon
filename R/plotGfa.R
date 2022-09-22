@@ -18,7 +18,6 @@
 #' @author David Porubsky, Sean McGee & Karynne Patterson
 #' @export
 #' 
-
 plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.anno_file=NULL) {
 
   ## Check user input ##
@@ -190,7 +189,6 @@ plotGfa <- function(gfa.tbl=NULL, min.segment.length=0, spacer.width=0.05, order
       final.plt <- final.plt +
         geom_rect(data=hap.segms.df, aes(xmin=start, xmax=end, ymin=rank-0.4, ymax=rank + 0.4), size=2, colour = 'red', fill = 'red') +
         ggforce::geom_bezier(data=arcs.df[arcs.df$link.ids %in% hap.links.ids,], aes(x = x, y = y, group=group, color=freq), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE, color='red')
-        scale_color_gradientn(colours = pal)
     }  
   }  
   ## Apply theme
