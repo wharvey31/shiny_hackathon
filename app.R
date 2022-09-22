@@ -40,7 +40,7 @@ ui <- fluidPage(
 						## Input BED file
 						fileInput(
 							"bed",
-						  	"BED file input",
+						  	"BED Annotation",
 							multiple=F, 
 							buttonLabel="browse",
 							placeholder="No file selected",
@@ -49,14 +49,6 @@ ui <- fluidPage(
 						fileInput(
 							"GAF_input2",
 							"GAF data input",
-							multiple=FALSE, 
-							buttonLabel="Browse",
-							placeholder="No file selected"
-							),
-						## Input Annotation file
-						fileInput(
-							"Annotation_Input",
-							"Add Annotation",
 							multiple=FALSE, 
 							buttonLabel="Browse",
 							placeholder="No file selected"
