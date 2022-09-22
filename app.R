@@ -8,7 +8,6 @@ library(tidyverse)
 library(readr)
 library(shinyjs)
 library(wesanderson)
-# library(Cairo)
 
 
 # Source helper functions -----
@@ -16,34 +15,28 @@ library(wesanderson)
 loadSupport()
 
 # functions
-# function to change rgb input into hex color
 
 # User interface ----
 ui <- fluidPage(
 	  tags$head(
       tags$style("html, body { height: 100%; width: 100%}"),
       tags$style("#title_panel {
-                 background : blue;
                  margin-left: width:20%"
       ),
       tags$style("#side_panel {
-                 background : green;
                  margin-left: width:20%"
                  ),
       tags$style("#panel1 {
-      background: red;
                  margin-left: width:100%;
                  }"),
       tags$style("#panel2 {
               overflow: auto;
-              background: orange;
               margin-left: width:100%;
           }"),
-      tags$style("#panel3 {
-              overflow: auto;
-              background: purple;
-              margin-left: width:20%;
-          }"),
+      # tags$style("#panel3 {
+      #         overflow: auto;
+      #         margin-left: width:20%;
+      #     }"),
       ),
 		 ## Title 
 		absolutePanel(id = "title_panel",
@@ -139,13 +132,13 @@ ui <- fluidPage(
                      ),
                  
     ),
-   absolutePanel(id = "panel3", 
-                 top = "80%", left = "35%", height = "15%", width = "60%", right = "10%",bottom = "10%",
-                 fluidRow(## Plot Ouput of linear visualization
-                   p("GAF segments"),
-                   uiOutput("GAF_select.ui"),
-                 ),
-   ),
+   # absolutePanel(id = "panel3", 
+   #               top = "80%", left = "35%", height = "15%", width = "60%", right = "10%",bottom = "10%",
+   #               fluidRow(## Plot Ouput of linear visualization
+   #                 p("GAF segments"),
+   #                 uiOutput("GAF_select.ui"),
+   #               ),
+   # ),
 )
 
 # Server logic ----
