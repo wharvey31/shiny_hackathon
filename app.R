@@ -104,7 +104,7 @@ ui <- fluidPage(
 		)
 
 # Server logic ----
-server <- function(input, output) {
+server <- function(input, output, session) {
 	# Read the rGFA file
 	ranges <- reactiveValues(x = NULL, y = NULL)
 	observeEvent(input$graph_dblclick, {
@@ -203,7 +203,41 @@ server <- function(input, output) {
 			return()
 		res[c("contig","start","stop","name","strand")]
 	})
-}
+
+	# Haplotype select population
+	haplotypes_df <- reactive({
+				gafToLinks(gaf.file = input$GAF_input2$datapath)
+			})
+	
+	haplotypes <- eventReactive(input$GAF_input2,{
+				haplotypes_df()$SN[!duplicated(haplotypes_df()$SN)]
+			})
+	
+	observeEvent(haplotypes(), {
+				updateSelectInput(session = session, inputId = "select_graph", choices = haplotypes())
+			})
+	
+	# Haplotype selection
+	haplotype <- eventReactive(input$select_graph, {
+				input$select_graph			
+			})
+	
+	observeEvent(haplotypes(), {
+				output$ggdag  <- renderPlot({
+							
+							full_plot <- plotGfa(gfa.tbl=graph_df())
+							max_abs_value <- max_absolute_value(full_plot$plot_env$arc.height)
+							
+							haplotype_links <- subset(haplotypes_df(), SN==haplotype())
+							haplotype_segments <- segments_for_haplotype_links(graph_df()$segments, haplotype_links)
+							
+							haplotype_info = list(segments = haplotype_segments, links = haplotype_links)
+							
+							plotGfa(gfa.tbl=haplotype_info, y.limit=max_abs_value) + coord_cartesian(xlim = ranges$x, ylim = NULL, expand = FALSE)
+						})
+			})
+	
+	}
 
 # Run app ----
 shinyApp(ui, server)
