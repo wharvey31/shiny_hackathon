@@ -9,7 +9,6 @@ library(readr)
 library(shinyjs)
 library(wesanderson)
 
-
 # Source helper functions -----
 
 loadSupport()
@@ -41,7 +40,7 @@ ui <- fluidPage(
 		 ## Title 
 		absolutePanel(id = "title_panel",
 		              top = "0%", left = "1%", height = "15%", width = "30%", bottom = "90%",
-		              h3("GFA Visualization") ),
+		              h3("Genome Path Finder (GPF)") ),
 				## Sidebar content
 				absolutePanel(id = "side_panel",
 				              top = "20%", left = "1%", height = "70%", width = "30%", bottom = "20%", #right = "80%"
