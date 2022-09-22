@@ -156,13 +156,13 @@ plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, min.link.d
   } else if (link.frequency == 'width') {  
     final.plt <- segms.plt +
       ggforce::geom_bezier(data=arcs.df, aes(x = x, y = y, group=group, size=freq), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE) +
-      geom_text(data=link.label, aes(x = midpoint, y = arc.height, label=freq), vjust=-0.2) +
+      geom_text(data=link.label, aes(x = midpoint, y = arc.height * 0.75, label=freq), vjust=-0.2) +
       scale_x_continuous(labels = scales::comma) + scale_size_binned(range = c(0,2))
   } else if (link.frequency == 'color') {
     pal <- wesanderson::wes_palette(name = "Zissou1", n = max(link.label$freq), type = "continuous")
     final.plt <- segms.plt +
       ggforce::geom_bezier(data=arcs.df, aes(x = x, y = y, group=group, color=freq), arrow = arrow(type = arrow.head, length = unit(0.01, "npc")), inherit.aes = FALSE) +
-      geom_text(data=link.label, aes(x = midpoint, y = arc.height, label=freq), vjust=-0.2) +
+      geom_text(data=link.label, aes(x = midpoint, y = arc.height * 0.75, label=freq), vjust=-0.2) +
       scale_x_continuous(labels = scales::comma) + scale_size_binned(range = c(0,2)) +
       scale_color_gradientn(colours = pal)
   }  
