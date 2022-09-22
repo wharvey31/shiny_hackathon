@@ -99,6 +99,29 @@ plot_bed_annot_track = function(track_name, bed_df, p = NULL, facet_col = "conti
   p
 }
 
+#'get_haplotype_names : given a bed_df return the unique haplotypes in the dataframe
+get_haplotype_names <- function(bed_df){
+  return(unique(bed_df$contig))
+}
+
+#'get_segments: given a contig
+get_segments <- function(gaf_df, contig, start=NULL, stop=NULL){
+  segments = gaf_df %>% 
+    filter(q.name == contig)
+  if(is.null(stop)){
+    stop = gaf_df$q.end[1]
+  }
+  if(is.null(start)){
+    start = gaf_df$q.start[1]
+  }
+  segments = segments %>% 
+    filter( (p.start > start & p.start < stop ) | 
+              (p.end > start & p.end < stop ) )
+  segments = segments %>% select(s.name) %>% unlist
+  names(segments) = NULL
+  segments
+}
+
 #test
 # dup_bed1 = load_annotation_bed(bed_path = "example_data/HG01071_2/HG01071_2.duplicons.bed", color_col = 9)
 # trf_bed1 = load_annotation_bed(bed_path = "example_data/HG01071_2/HG01071_2.trf.bed")
