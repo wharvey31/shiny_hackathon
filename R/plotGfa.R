@@ -22,7 +22,7 @@
 #' 
 
 
-plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.anno_file=NULL) {
+plotGfa <- function(gfa.tbl=NULL, y.limit=NULL, min.segment.length=0, spacer.width=0.05, order.by='offset', layout='linear', shape='rectangle', arrow.head='closed', gaf.links=NULL, link.frequency=NULL, highlight.haplotype=NULL, gaf.annotation=NULL) {
 
   ## Check user input ##
   ######################
